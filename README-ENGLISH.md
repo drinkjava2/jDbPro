@@ -20,18 +20,25 @@ Add below in pom.xml:
       <version>1.7.0</version>  (will release soon becasue just changed project name)
    </dependency>
 ``` 
-jDbPro depends on DbUtils, if use Maven will automatically download commons-dbutils-1.7.jar
-
+jDbPro1.7.0 only depends on DbUtils, if use Maven will automatically download commons-dbutils-1.7.jar  
+If want jDbPro work with transactions services, also need add below dependency for jTransactions, jTransactions is a seperated transaction services tool:  
+```
+    <dependency>
+      <groupId>com.github.drinkjava2</groupId>
+      <artifactId>jtransactions</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+```	
 
 ### Introduce   
 1. jDbPro mixed use normal style, In-line style and template style demo, default if no transaction service configurated, jDbPro works on auto-commit mode.  
 query(Connection, String sql, Object... params):   Original DbUtils methods,  need close Connection and catch SQLException  
 query(String sql, Object... params):   Original DbUtils methods, need catch SQLException  
-nQuery(String sql, Object... params):  normal style, no need catch SQLException  
+nQuery(String sql, Object... params):  new style, no need catch SQLException  
 iQuery(String... inlineSQLs):  In-line style  
 tQuery(String... sqlTemplate):  SQL Template style  
+Below is the demo shows different styles:
 ``` 
-
 	@Test
 	public void executeTest() {
 		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
