@@ -1,6 +1,7 @@
 (English instruction please see [README-ENGLISH.md](README-ENGLISH.md) )  
-## jDbPro
-开源协议: [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0) 
+## jDbPro 
+(旧项目名"DbUtils-Pro"，因与Apache Commons DbUtils项目名称有冲突已停用)  
+开源协议: [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)  
 
 jDbPro是一个建立于Apache Commons DbUtils(以下简称DbUtils)上，并对其添加了一些功能的JDBC持久层工具，主要特点有：  
 1.改进DbUtils的异常处理，将SQLException转化为运行时导常抛出，无需再手工捕获异常，这点类似于Spring的JdbcTemplate。  
@@ -10,12 +11,12 @@ jDbPro是一个建立于Apache Commons DbUtils(以下简称DbUtils)上，并对�
 5.与原有的DbUtils100%兼容，这是因为DbPro类的父类是QueryRunner。对于已经使用DbUtils的项目，只需要将QueryRunner换成DbPro,即可无缝升级。  
 
 jDbPro是作为jSqlBox项目的内核而开发的，它是一个承上(包装JDBC，支持多种SQL写法)启下(作为ORM项目内核)的项目，但它本身也是一个独立的工具，可以单独使用，其运行环境为Java6或以上。  
-作为ORM项目的内核，jDbPro仅关注于改进JDBC操作的易用性，它不考虑对象映射、关联映射、跨数据库、分页等高级功能，这些高级功能属于jSqlBox项目负责的范畴。jSqlBox的设计理念是尽量将每个功能点设计成独立的小项目，隔离它们的相互依赖性，每个小项目都可以单独使用，整合在一起就成了jSqlBox，这与Hibernate之类将所有功能都打包在一起提供的持久层工具是不同的。目前在这一理念下已经开发或正在开发的工具项目有：  
+作为ORM项目的内核，jDbPro仅关注于改进JDBC操作的易用性，它不考虑对象映射、关联映射、跨数据库、分页等高级功能，这些高级功能属于jSqlBox项目负责的范畴。jSqlBox的设计理念是尽量将每个功能点设计成独立的小项目，隔离它们的相互依赖性，每个小项目都可以单独使用，整合在一起就成了jSqlBox，这与Hibernate之类将所有功能都捆绑在一起、不能单独使用的持久层工具是不同的。目前在这一理念下已经开发或正在开发的工具项目有：  
 1)jDialects, 这是一个支持70多种方言的SQL分页、DDL支持、JPA支持工具，用于解决利用JDBC工具进行跨数据库开发的问题。  
 2)jTransactions, 这是一个将声明式事务作为单独的项目提供的工具集，目前包含TinyTx和SpringTx两个实现，今后将不断扩充。  
 3)jBeanBox, 这是一个纯粹的IOC/AOP工具，与Spring内核功能类似，但是更小、更易用, 是TinyTx的最佳伴侣。  
-4)jDbPro, 这是一个JDBC工具，支持多种SQL风格，即可单独使用，也可作为ORM项目的内核存在，起承上启下作用。  
-5)jSqlBox, 这是一个基于ActiveRecord模式、支持动态配置的ORM工具，主要作用是实现POJO对象的CRUD和支持基本的关联映射。  
+4)jDbPro, 这是一个JDBC工具，支持多种SQL风格，即可单独使用，也作为ORM项目jSqlBox的内核存在，起承上启下作用。  
+5)jSqlBox, 这是一个基于ActiveRecord模式、支持动态配置的ORM工具，主要作用是整合上述子项目，并支持POJO实体的CRUD和实现基本的关联映射。  
 
 ### 如何引入jDbPro到项目?   
 方式一：手工下载commons-dbutils-1.7.jar和jdbpro-1.7.0.jar并放置于项目的类目录。  
@@ -24,7 +25,7 @@ jDbPro是作为jSqlBox项目的内核而开发的，它是一个承上(包装JDB
    <dependency>  
       <groupId>com.github.drinkjava2</groupId>  
       <artifactId>jdbpro</artifactId>  
-      <version>1.7.0</version>  (刚改项目名，还未发布)
+      <version>1.7.0</version>
    </dependency>
 ``` 
 jDbPro仅依赖于DbUtils, 如果使用Maven将自动下载对应其主版本号的DbUtils包commons-dbutils-1.7.jar。   

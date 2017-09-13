@@ -1,4 +1,3 @@
-(English instruction please see [README-ENGLISH.md](README-ENGLISH.md) )  
 ## jDbPro
 License: [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)   
   
@@ -25,15 +24,13 @@ jDbPro depends on DbUtils, if use Maven will automatically download commons-dbut
 
 
 ### Introduce   
-一. jDbPro mixed use normal style, In-line style and template style demo, default if no transaction service configurated, jDbPro works on auto-commit mode.
+1. jDbPro mixed use normal style, In-line style and template style demo, default if no transaction service configurated, jDbPro works on auto-commit mode.  
+query(Connection, String sql, Object... params):   Original DbUtils methods,  need close Connection and catch SQLException  
+query(String sql, Object... params):   Original DbUtils methods, need catch SQLException  
+nQuery(String sql, Object... params):  normal style, no need catch SQLException  
+iQuery(String... inlineSQLs):  In-line style  
+tQuery(String... sqlTemplate):  SQL Template style  
 ``` 
- * <pre>
- * query(Connection, String sql, Object... params):   Original DbUtils methods,  need close Connection and catch SQLException
- * query(String sql, Object... params):   Original DbUtils methods, need catch SQLException
- * nQuery(String sql, Object... params):  normal style, no need catch SQLException
- * iQuery(String... inlineSQLs):  In-line style
- * tQuery(String... sqlTemplate):  SQL Template style
- * </pre>
 
 	@Test
 	public void executeTest() {
@@ -112,7 +109,7 @@ jDbPro depends on DbUtils, if use Maven will automatically download commons-dbut
  
 ```		
  
-二. Transaction demo
+2. Transaction demo
     jDbPro has no transaction function, so it should supported by 3rd party transaction service tool like Spring.  
 	Here is a demo shows use jTransactions as the transaction service. "jTransactions" is a seperated transaction services tool, included 2 implementations: TinyTx and SpringTx. Below demo show at runtime switch use transaction service between TinyTx and SpringTx:  
 ```
