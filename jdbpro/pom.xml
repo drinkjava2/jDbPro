@@ -4,7 +4,7 @@
  
  <groupId>com.github.drinkjava2</groupId>
  <artifactId>jdbpro</artifactId>
- <version>1.7.0</version>
+ <version>1.7.0.1</version>
  <packaging>jar</packaging> 
  
  <name>jdbpro</name>
@@ -57,7 +57,7 @@
 
  <dependencies>   
 
-    <!-- jdbpro 1.7.0 only depends on Apache Commons DbUtils 1.7 -->   
+    <!-- jdbpro 1.7.0.1 depends on Apache Commons DbUtils 1.7 -->   
     <dependency>
       <groupId>commons-dbutils</groupId>
       <artifactId>commons-dbutils</artifactId>

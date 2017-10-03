@@ -19,13 +19,13 @@ jDbPro是作为jSqlBox项目的内核而开发的，它是一个承上(包装JDB
 5)jSqlBox, 这是一个基于ActiveRecord模式、支持动态配置的ORM工具，主要作用是整合上述子项目，并支持POJO实体的CRUD和实现基本的关联映射。  
 
 ### 如何引入jDbPro到项目?   
-方式一：手工下载commons-dbutils-1.7.jar和jdbpro-1.7.0.jar并放置于项目的类目录。  
+方式一：手工下载commons-dbutils-1.7.jar和jdbpro-1.7.0.1.jar并放置于项目的类目录。  
 方式二：在项目的pom.xml文件中加入如下行：  
 ```
    <dependency>  
       <groupId>com.github.drinkjava2</groupId>  
       <artifactId>jdbpro</artifactId>  
-      <version>1.7.0</version>
+      <version>1.7.0.1</version>
    </dependency>
 ``` 
 jDbPro仅依赖于DbUtils, 如果使用Maven将自动下载对应其主版本号的DbUtils包commons-dbutils-1.7.jar。   
