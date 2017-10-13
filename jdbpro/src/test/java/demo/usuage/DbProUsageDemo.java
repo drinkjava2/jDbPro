@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.github.drinkjava2.jdbpro.DbPro;
+import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
 
 import demo.DataSourceConfig.DataSourceBox;
 
@@ -140,7 +141,7 @@ public class DbProUsageDemo {
 				dbPro.iQueryForObject("select count(*) from users where ", inline0(user, "=?", " and ")));
 		dbPro.iExecute(param0(), "delete from users where ", inline(user, "=?", " or "));
 
-		System.out.println("Example#6: tXxxx Sql Template style methods");
+		System.out.println("Example#6: tXxxx Template style methods use default BasicSqlTemplate engine");
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})");
 		put0("name", "Sam");
@@ -150,6 +151,18 @@ public class DbProUsageDemo {
 				dbPro.tQueryForObject("select count(*) from users where ${col}=#{name} and address=#{addr}",
 						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
 		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
+				put("addr", "Canada"));
+
+		System.out.println("Example#7: tXxxx Template style but use 'NamedParamSqlTemplate' template engine");
+		dbPro.setSqlTemplateEngine(NamedParamSqlTemplate.instance());
+		put0("user", user);
+		dbPro.tExecute("insert into users (name, address) values(:user.name, :user.address)");
+		put0("name", "Sam");
+		put("addr", "Canada");
+		dbPro.tExecute("update users set name=:name, address=:addr");
+		Assert.assertEquals(1L, dbPro.tQueryForObject("select count(*) from users where ${col}=:name and address=:addr",
+				put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
+		dbPro.tExecute("delete from users where name=:name or address=:addr", put0("name", "Sam"),
 				put("addr", "Canada"));
 	}
 

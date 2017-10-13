@@ -40,9 +40,8 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 
 	private static final String DIRECT_REPLACE_START_DELIMITER = "${";
 	private static final String DIRECT_REPLACE_END_DELIMITER = "}";
-	
 
-	/** A lazy initialisation singleton pattern */
+	/** A lazy initialization singleton pattern */
 	private static class InnerBasicSqlTemplate {
 		private InnerBasicSqlTemplate() {
 		}
@@ -51,7 +50,7 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	}
 
 	/** @return A singleton instance of BasicSqlTemplate */
-	public static final BasicSqlTemplate instance() {
+	public static BasicSqlTemplate instance() {
 		return InnerBasicSqlTemplate.INSTANCE;
 	}
 
@@ -64,12 +63,14 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	}
 
 	/**
-	 * Build a BasicSqlTemplate instance by given startDelimiter and endDelimiter,
-	 * startDelimiter should be 1 or 2 characters and endDelimiter should be 1
-	 * character
+	 * Build a BasicSqlTemplate instance by given startDelimiter and
+	 * endDelimiter, startDelimiter should be 1 or 2 characters and endDelimiter
+	 * should be 1 character
 	 * 
-	 * @param startDelimiter The start delimiter
-	 * @param endDelimiter The end delimiter
+	 * @param startDelimiter
+	 *            The start delimiter
+	 * @param endDelimiter
+	 *            The end delimiter
 	 */
 	public BasicSqlTemplate(String startDelimiter, String endDelimiter) {
 		if (isEmpty(startDelimiter) || isEmpty(endDelimiter) || startDelimiter.length() > 2
@@ -87,10 +88,15 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 
 	/**
 	 * Render a template with
-	 * @param template A SQL Template String
-	 * @param paramMap A Map stored SQL parameters
-	 * @param startDelimiter Start Delimiter of SQL Template
-	 * @param endDelimiter End Delimiter of SQL Template
+	 * 
+	 * @param template
+	 *            A SQL Template String
+	 * @param paramMap
+	 *            A Map stored SQL parameters
+	 * @param startDelimiter
+	 *            Start Delimiter of SQL Template
+	 * @param endDelimiter
+	 *            End Delimiter of SQL Template
 	 * @return A SqlAndParams instance
 	 */
 	protected static SqlAndParams doRender(String template, Map<String, Object> paramMap, String startDelimiter,
@@ -261,7 +267,8 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	 * CharSequence. That functionality is available in isBlank().
 	 * </p>
 	 *
-	 * @param cs the CharSequence to check, may be null
+	 * @param cs
+	 *            the CharSequence to check, may be null
 	 * @return {@code true} if the CharSequence is empty or null
 	 */
 	public static boolean isEmpty(final CharSequence cs) {
@@ -271,14 +278,14 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	// -----------------------------------------------------------------------
 	/**
 	 * <p>
-	 * Gets the substring before the first occurrence of a separator. The separator
-	 * is not returned.
+	 * Gets the substring before the first occurrence of a separator. The
+	 * separator is not returned.
 	 * </p>
 	 *
 	 * <p>
-	 * A {@code null} string input will return {@code null}. An empty ("") string
-	 * input will return the empty string. A {@code null} separator will return the
-	 * input string.
+	 * A {@code null} string input will return {@code null}. An empty ("")
+	 * string input will return the empty string. A {@code null} separator will
+	 * return the input string.
 	 * </p>
 	 *
 	 * <p>
@@ -296,8 +303,10 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	 * StringUtils.substringBefore("abc", null)  = "abc"
 	 * </pre>
 	 *
-	 * @param str the String to get a substring from, may be null
-	 * @param separator the String to search for, may be null
+	 * @param str
+	 *            the String to get a substring from, may be null
+	 * @param separator
+	 *            the String to search for, may be null
 	 * @return the substring before the first occurrence of the separator,
 	 *         {@code null} if null String input
 	 */
@@ -317,14 +326,14 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 
 	/**
 	 * <p>
-	 * Gets the substring after the first occurrence of a separator. The separator
-	 * is not returned.
+	 * Gets the substring after the first occurrence of a separator. The
+	 * separator is not returned.
 	 * </p>
 	 *
 	 * <p>
-	 * A {@code null} string input will return {@code null}. An empty ("") string
-	 * input will return the empty string. A {@code null} separator will return the
-	 * empty string if the input string is not {@code null}.
+	 * A {@code null} string input will return {@code null}. An empty ("")
+	 * string input will return the empty string. A {@code null} separator will
+	 * return the empty string if the input string is not {@code null}.
 	 * </p>
 	 *
 	 * <p>
@@ -342,8 +351,10 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	 * StringUtils.substringAfter("abc", "")    = "abc"
 	 * </pre>
 	 *
-	 * @param str the String to get a substring from, may be null
-	 * @param separator the String to search for, may be null
+	 * @param str
+	 *            the String to get a substring from, may be null
+	 * @param separator
+	 *            the String to search for, may be null
 	 * @return the substring after the first occurrence of the separator,
 	 *         {@code null} if null String input
 	 */
