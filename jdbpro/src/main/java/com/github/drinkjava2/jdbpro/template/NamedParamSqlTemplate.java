@@ -43,7 +43,7 @@ public class NamedParamSqlTemplate implements SqlTemplateEngine {
 		return InnerNamedParamSqlTemplate.INSTANCE;
 	}
 
-	private boolean isParamChars(char c) {
+	private static boolean isParamChars(char c) {
 		return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.';
 	}
 
