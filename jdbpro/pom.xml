@@ -63,6 +63,13 @@
       <artifactId>commons-dbutils</artifactId>
       <version>1.7</version>
     </dependency>
+    
+     <!-- jdbpro 1.7.0.1 depends on jDialects 1.0.6 -->   
+  	<dependency>  
+		<groupId>com.github.drinkjava2</groupId>
+		<artifactId>jdialects</artifactId>  
+		<version>1.0.6</version>  
+	</dependency>
 
     <!-- ============================================================================= -->
     <!-- Below dependencies are for unit test only, scope set to "test"                --> 

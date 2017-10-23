@@ -32,6 +32,7 @@ import com.github.drinkjava2.jdbpro.DbProLogger;
 import com.github.drinkjava2.jdbpro.DbRuntimeException;
 import com.github.drinkjava2.jdbpro.template.BasicSqlTemplate;
 import com.github.drinkjava2.jdbpro.template.SqlTemplateEngine;
+import com.github.drinkjava2.jdialects.PaginateSupport;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 
 /**
@@ -56,10 +57,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 	 * DataSource or ThreadLocal or container
 	 */
 	protected ConnectionManager cm;
-	protected Boolean allowShowSQL = false; 
+	protected Boolean allowShowSQL = false;
 	protected DbProLogger logger = staticlogger;
 	protected Integer batchSize = 100;
-	protected SqlTemplateEngine sqlTemplateEngine = BasicSqlTemplate.instance();  
+	protected SqlTemplateEngine sqlTemplateEngine = BasicSqlTemplate.instance();
+	protected PaginateSupport paginator;
+	private static ThreadLocal<int[]> paginationCache = new ThreadLocal<int[]>();
 
 	private ThreadLocal<Boolean> batchEnabled = new ThreadLocal<Boolean>() {
 		@Override
@@ -80,12 +83,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 	}
 
 	public ImprovedQueryRunner(DataSource ds) {
-		super(ds);
+		super(ds); 
 	}
 
 	public ImprovedQueryRunner(DataSource ds, ConnectionManager cm) {
 		super(ds);
-		this.cm = cm;
+		this.cm = cm; 
 	}
 
 	@Override
@@ -138,6 +141,42 @@ public class ImprovedQueryRunner extends QueryRunner {
 	 */
 	protected String formatParameters(Object... params) {
 		return "Parameters: " + Arrays.deepToString(params);
+	}
+
+	/**
+	 * At here SQL will support pagin() method, subClasses can override this method
+	 * to add more functions
+	 */
+	public String explainSql(String sql) {
+		int[] pagins = paginationCache.get();
+		if (pagins != null) {
+			int page = pagins[0];
+			int pageSize = pagins[1];
+			paginationCache.set(null);
+			if (paginator == null)
+				throw new DbRuntimeException("Can not explain pagination SQL when paginator is null");
+			return paginator.paginate(page, pageSize, sql);
+		} else
+			return sql;
+	}
+
+	/**
+	 * Return a empty "" String and save a ThreadLocal pageNumber and pageSize array
+	 * in current thread, it will be used by SqlBoxContext's query methods.
+	 */
+	public static String pagin(int pageNumber, int pageSize) {
+		if (pageNumber < 1 || pageSize < 1)
+			paginationCache.set(null);
+		else
+			paginationCache.set(new int[] { pageNumber, pageSize });
+		return "";
+	}
+
+	/** Return a paginated SQL by call dialect's paginate method */
+	public String paginate(int pageNumber, int pageSize, String sql) {
+		if (paginator == null)
+			throw new DbRuntimeException("Can not explain pagination SQL when paginator is null");
+		return paginator.paginate(pageNumber, pageSize, sql);
 	}
 
 	// === Batch execute methods======
@@ -263,118 +302,155 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int execute(Connection conn, String sql, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("e1", null, null, sql, conn, params);
+			addToCacheIfFullFlush("e1", null, null, explainedSql, conn, params);
 			return 0;
 		} else
-			return super.execute(conn, sql, params);
+			return super.execute(conn, explainedSql, params);
 	}
 
 	@Override
 	public <T> List<T> execute(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params)
 			throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			return (List<T>) addToCacheIfFullFlush("e2", rsh, null, sql, conn, params);
+			return (List<T>) addToCacheIfFullFlush("e2", rsh, null, explainedSql, conn, params);
 		} else
-			return super.execute(conn, sql, rsh, params);
+			return super.execute(conn, explainedSql, rsh, params);
 	}
 
 	@Override
 	public int execute(String sql, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("e3", null, null, sql, null, params);
+			addToCacheIfFullFlush("e3", null, null, explainedSql, null, params);
 			return 0;
 		} else
-			return super.execute(sql, params);
+			return super.execute(explainedSql, params);
 	}
 
 	@Override
 	public <T> List<T> execute(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get())
-			return (List<T>) addToCacheIfFullFlush("e4", rsh, null, sql, null, params);
-		return super.execute(sql, rsh, params);
+			return (List<T>) addToCacheIfFullFlush("e4", rsh, null, explainedSql, null, params);
+		return super.execute(explainedSql, rsh, params);
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get())
-			return addToCacheIfFullFlush("i1", rsh, null, sql, conn, null);
-		return super.insert(conn, sql, rsh);
+			return addToCacheIfFullFlush("i1", rsh, null, explainedSql, conn, null);
+		return super.insert(conn, explainedSql, rsh);
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get())
-			return addToCacheIfFullFlush("i2", rsh, null, sql, conn, params);
-		return super.insert(conn, sql, rsh, params);
+			return addToCacheIfFullFlush("i2", rsh, null, explainedSql, conn, params);
+		return super.insert(conn, explainedSql, rsh, params);
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get())
-			return addToCacheIfFullFlush("i3", rsh, null, sql, null, null);
-		return super.insert(sql, rsh);
+			return addToCacheIfFullFlush("i3", rsh, null, explainedSql, null, null);
+		return super.insert(explainedSql, rsh);
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get())
-			return addToCacheIfFullFlush("i4", rsh, null, sql, null, params);
-		return super.insert(sql, rsh, params);
+			return addToCacheIfFullFlush("i4", rsh, null, explainedSql, null, params);
+		return super.insert(explainedSql, rsh, params);
 	}
 
 	@Override
 	public int update(Connection conn, String sql) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u1", null, null, sql, conn, null);
+			addToCacheIfFullFlush("u1", null, null, explainedSql, conn, null);
 			return 0;
 		} else
-			return super.update(conn, sql);
+			return super.update(conn, explainedSql);
 	}
 
 	@Override
 	public int update(Connection conn, String sql, Object param) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u2", null, param, sql, conn, null);
+			addToCacheIfFullFlush("u2", null, param, explainedSql, conn, null);
 			return 0;
 		} else
-			return super.update(conn, sql, param);
+			return super.update(conn, explainedSql, param);
 	}
 
 	@Override
 	public int update(Connection conn, String sql, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u3", null, null, sql, conn, params);
+			addToCacheIfFullFlush("u3", null, null, explainedSql, conn, params);
 			return 0;
 		} else
-			return super.update(conn, sql, params);
+			return super.update(conn, explainedSql, params);
 	}
 
 	@Override
 	public int update(String sql) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u4", null, null, sql, null, null);
+			addToCacheIfFullFlush("u4", null, null, explainedSql, null, null);
 			return 0;
 		} else
-			return super.update(sql);
+			return super.update(explainedSql);
 	}
 
 	@Override
 	public int update(String sql, Object param) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u5", null, param, sql, null, null);
+			addToCacheIfFullFlush("u5", null, param, explainedSql, null, null);
 			return 0;
 		} else
-			return super.update(sql, param);
+			return super.update(explainedSql, param);
 	}
 
 	@Override
 	public int update(String sql, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
 		if (batchEnabled.get()) {
-			addToCacheIfFullFlush("u6", null, null, sql, null, params);
+			addToCacheIfFullFlush("u6", null, null, explainedSql, null, params);
 			return 0;
 		} else
-			return super.update(sql, params);
+			return super.update(explainedSql, params);
+	}
+
+	public <T> T query(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
+		return super.query(conn, explainedSql, rsh, params);
+	}
+
+	@Override
+	public <T> T query(Connection conn, String sql, ResultSetHandler<T> rsh) throws SQLException {
+		String explainedSql = explainSql(sql);
+		return super.query(conn, explainedSql, rsh);
+	}
+
+	@Override
+	public <T> T query(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
+		String explainedSql = explainSql(sql);
+		return super.query(explainedSql, rsh, params);
+	}
+
+	@Override
+	public <T> T query(String sql, ResultSetHandler<T> rsh) throws SQLException {
+		String explainedSql = explainSql(sql);
+		return super.query(explainedSql, rsh);
 	}
 
 	// ==========getter & setter==========
@@ -393,7 +469,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 	public void setSqlTemplateEngine(SqlTemplateEngine sqlTemplateEngine) {
 		this.sqlTemplateEngine = sqlTemplateEngine;
 	}
-	
+
 	public ConnectionManager getConnectionManager() {
 		return cm;
 	}
@@ -429,4 +505,13 @@ public class ImprovedQueryRunner extends QueryRunner {
 	public boolean isBatchEnabled() {
 		return batchEnabled.get();
 	}
+
+	public PaginateSupport getPaginator() {
+		return paginator;
+	}
+
+	public void setPaginator(PaginateSupport paginator) {
+		this.paginator = paginator;
+	} 
+	
 }
