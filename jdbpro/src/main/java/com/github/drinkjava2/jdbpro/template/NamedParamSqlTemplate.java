@@ -71,6 +71,6 @@ public class NamedParamSqlTemplate implements SqlTemplateEngine {
 
 	public SqlAndParams render(String sqlTemplate, Map<String, Object> paramMap, Set<String> directReplaceNamesSet) {
 		return BasicSqlTemplate.instance().render(toBasicSqlTemplate(sqlTemplate), paramMap, directReplaceNamesSet);
-	};
+	}
 
 }

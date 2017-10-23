@@ -30,6 +30,8 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 import com.github.drinkjava2.jdbpro.DbProLogger;
 import com.github.drinkjava2.jdbpro.DbRuntimeException;
+import com.github.drinkjava2.jdbpro.template.BasicSqlTemplate;
+import com.github.drinkjava2.jdbpro.template.SqlTemplateEngine;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 
 /**
@@ -46,19 +48,27 @@ import com.github.drinkjava2.jtransactions.ConnectionManager;
  * @author Yong Zhu
  * @since 1.7.0
  */
-@SuppressWarnings({ "unchecked", "rawtypes" })
+@SuppressWarnings({ "all" })
 public class ImprovedQueryRunner extends QueryRunner {
+	private static final DbProLogger staticlogger = DbProLogger.getLog(ImprovedQueryRunner.class);
 	/**
 	 * The ConnectionManager determine how to get and release connections from
 	 * DataSource or ThreadLocal or container
 	 */
 	protected ConnectionManager cm;
-	protected Boolean allowShowSQL = false;
-	private static final DbProLogger staticlogger = DbProLogger.getLog(ImprovedQueryRunner.class);
+	protected Boolean allowShowSQL = false; 
 	protected DbProLogger logger = staticlogger;
-	protected boolean batchEnable = false;
 	protected Integer batchSize = 100;
-	protected ThreadLocal<ArrayList<Object[]>> sqlBatch = new ThreadLocal<ArrayList<Object[]>>() {
+	protected SqlTemplateEngine sqlTemplateEngine = BasicSqlTemplate.instance();  
+
+	private ThreadLocal<Boolean> batchEnabled = new ThreadLocal<Boolean>() {
+		@Override
+		protected Boolean initialValue() {
+			return false;
+		}
+	};
+
+	private ThreadLocal<ArrayList<Object[]>> sqlBatch = new ThreadLocal<ArrayList<Object[]>>() {
 		@Override
 		protected ArrayList<Object[]> initialValue() {
 			return new ArrayList<Object[]>();
@@ -96,21 +106,21 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	protected CallableStatement prepareCall(Connection conn, String sql) throws SQLException {
-		if (this.getAllowShowSQL())
+		if (this.getAllowShowSQL() && !batchEnabled.get())
 			logger.info("SQL: " + sql);
 		return super.prepareCall(conn, sql);
 	}
 
 	@Override
 	protected PreparedStatement prepareStatement(Connection conn, String sql) throws SQLException {
-		if (this.getAllowShowSQL())
+		if (this.getAllowShowSQL() && !batchEnabled.get())
 			logger.info(formatSql(sql));
 		return super.prepareStatement(conn, sql);
 	}
 
 	@Override
 	public void fillStatement(PreparedStatement stmt, Object... params) throws SQLException {
-		if (this.getAllowShowSQL())
+		if (this.getAllowShowSQL() && !batchEnabled.get())
 			logger.info(formatParameters(params));
 		super.fillStatement(stmt, params);
 	}
@@ -136,12 +146,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 	 */
 	public void batchFlush() throws SQLException {
 		List<Object[]> sqlCacheList = sqlBatch.get();
-		if (sqlCacheList.size() == 0)
+		if (sqlCacheList.isEmpty())
 			return;
 		Object[] f = sqlCacheList.get(0);// first row
 		if (f.length != 6)
 			throw new DbRuntimeException("Unexpected batch cached SQL format");
-		int paramLenth;
+		int paramLenth = 0;
 		if ("i1".equals(f[0]) || "i3".equals(f[0]) || "u1".equals(f[0]) || "u4".equals(f[0]))
 			paramLenth = 0;
 		if ("u2".equals(f[0]) || "u5".equals(f[0]))
@@ -164,6 +174,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 		String sql = (String) f[3];
 		Connection conn = (Connection) f[4];
 		ResultSetHandler rsh = (ResultSetHandler) f[1];
+		if (this.getAllowShowSQL()) {
+			logger.info("Batch execute " + sqlCacheList.size() + " SQLs");
+			logger.info(formatSql(sql));
+			logger.info("First row " + formatParameters(allParams[0]));
+			logger.info("Last row " + formatParameters(allParams[allParams.length - 1]));
+		}
 		if ("e1".equals(f[0]) || "i1".equals(f[0]) || "u1".equals(f[0]) || "u2".equals(f[0]) || "u3".equals(f[0]))
 			super.batch(conn, sql, allParams);
 		else if ("e3".equals(f[0]) || "i3".equals(f[0]) || "u4".equals(f[0]) || "u5".equals(f[0]) || "u6".equals(f[0]))
@@ -181,14 +197,14 @@ public class ImprovedQueryRunner extends QueryRunner {
 	public void batchBegin() throws SQLException {
 		if (!sqlBatch.get().isEmpty())
 			batchFlush();
-		this.batchEnable = true;
+		this.batchEnabled.set(true);
 	}
 
 	/** Stop batch sql */
 	public void batchEnd() throws SQLException {
 		if (!sqlBatch.get().isEmpty())
 			batchFlush();
-		this.batchEnable = false;
+		this.batchEnabled.set(false);
 	}
 
 	/**
@@ -231,10 +247,10 @@ public class ImprovedQueryRunner extends QueryRunner {
 		List<Object[]> cached = sqlBatch.get();
 		if (cached.size() >= this.getBatchSize())
 			this.batchFlush();
-		else if (cached.size() > 0) {
+		else if (!cached.isEmpty()) {
 			Object[] last = cached.get(cached.size() - 1);
-			if (!last[0].equals(forCache[0]) || !last[3].equals(forCache[3]) || !(last[1] == forCache[1])
-					|| !(last[4] == forCache[4]))
+			if (!last[0].equals(forCache[0]) || !last[3].equals(forCache[3]) || (last[1] != forCache[1])
+					|| (last[4] != forCache[4]))
 				this.batchFlush();
 		}
 		sqlBatch.get().add(forCache);
@@ -247,7 +263,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int execute(Connection conn, String sql, Object... params) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("e1", null, null, sql, conn, params);
 			return 0;
 		} else
@@ -257,7 +273,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 	@Override
 	public <T> List<T> execute(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params)
 			throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			return (List<T>) addToCacheIfFullFlush("e2", rsh, null, sql, conn, params);
 		} else
 			return super.execute(conn, sql, rsh, params);
@@ -265,7 +281,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int execute(String sql, Object... params) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("e3", null, null, sql, null, params);
 			return 0;
 		} else
@@ -274,42 +290,42 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public <T> List<T> execute(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
-		if (batchEnable)
+		if (batchEnabled.get())
 			return (List<T>) addToCacheIfFullFlush("e4", rsh, null, sql, null, params);
 		return super.execute(sql, rsh, params);
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh) throws SQLException {
-		if (batchEnable)
+		if (batchEnabled.get())
 			return addToCacheIfFullFlush("i1", rsh, null, sql, conn, null);
 		return super.insert(conn, sql, rsh);
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
-		if (batchEnable)
+		if (batchEnabled.get())
 			return addToCacheIfFullFlush("i2", rsh, null, sql, conn, params);
 		return super.insert(conn, sql, rsh, params);
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh) throws SQLException {
-		if (batchEnable)
+		if (batchEnabled.get())
 			return addToCacheIfFullFlush("i3", rsh, null, sql, null, null);
 		return super.insert(sql, rsh);
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
-		if (batchEnable)
+		if (batchEnabled.get())
 			return addToCacheIfFullFlush("i4", rsh, null, sql, null, params);
 		return super.insert(sql, rsh, params);
 	}
 
 	@Override
 	public int update(Connection conn, String sql) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u1", null, null, sql, conn, null);
 			return 0;
 		} else
@@ -318,7 +334,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int update(Connection conn, String sql, Object param) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u2", null, param, sql, conn, null);
 			return 0;
 		} else
@@ -327,7 +343,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int update(Connection conn, String sql, Object... params) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u3", null, null, sql, conn, params);
 			return 0;
 		} else
@@ -336,7 +352,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int update(String sql) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u4", null, null, sql, null, null);
 			return 0;
 		} else
@@ -345,7 +361,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int update(String sql, Object param) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u5", null, param, sql, null, null);
 			return 0;
 		} else
@@ -354,7 +370,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	@Override
 	public int update(String sql, Object... params) throws SQLException {
-		if (batchEnable) {
+		if (batchEnabled.get()) {
 			addToCacheIfFullFlush("u6", null, null, sql, null, params);
 			return 0;
 		} else
@@ -362,6 +378,22 @@ public class ImprovedQueryRunner extends QueryRunner {
 	}
 
 	// ==========getter & setter==========
+	/**
+	 * Return current SqlTemplateEngine
+	 */
+	public SqlTemplateEngine getSqlTemplateEngine() {
+		return sqlTemplateEngine;
+	}
+
+	/**
+	 * Set a SqlTemplateEngine, if not set will default use a BasicSqlTemplate
+	 * instance as SQL template engine
+	 * @param sqlTemplateEngine
+	 */
+	public void setSqlTemplateEngine(SqlTemplateEngine sqlTemplateEngine) {
+		this.sqlTemplateEngine = sqlTemplateEngine;
+	}
+	
 	public ConnectionManager getConnectionManager() {
 		return cm;
 	}
@@ -394,7 +426,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 		this.batchSize = batchSize;
 	}
 
-	public boolean isBatchEnable() {
-		return batchEnable;
+	public boolean isBatchEnabled() {
+		return batchEnabled.get();
 	}
 }

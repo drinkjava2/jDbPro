@@ -1,18 +1,7 @@
 package demo.usuage;
 
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline;
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline0;
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.param;
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.param0;
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.question;
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.question0;
+import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.*;
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.valuesQuesions;
-import static com.github.drinkjava2.jdbpro.template.TemplateQueryRunner.put;
-import static com.github.drinkjava2.jdbpro.template.TemplateQueryRunner.put0;
-import static com.github.drinkjava2.jdbpro.template.TemplateQueryRunner.replace;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
@@ -23,7 +12,6 @@ import org.junit.Test;
 
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.github.drinkjava2.jdbpro.DbPro;
-import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
 
 import demo.DataSourceConfig.DataSourceBox;
 
@@ -81,19 +69,38 @@ public class BatchOperationDemo {
 
 	@Test
 	public void executeTest() {
+		long repeat = 10000L;
 		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
-		dbPro.setAllowShowSQL(true);
+		dbPro.setAllowShowSQL(false);
 		User user = new User();
 		user.setName("Sam");
 		user.setAddress("Canada");
 
+		dbPro.nExecute("delete from users");
+		long start = System.currentTimeMillis();
+		for (long i = 0; i < repeat; i++) {
+			user.setName("Name" + i);
+			user.setAddress("Address" + i);
+			dbPro.iExecute("insert into users (", inline0(user, "", ", ") + ") ", valuesQuesions());
+		}
+		long end = System.currentTimeMillis();
+		String timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
+		System.out.println(String.format("Non-Batch execute " + repeat + " SQLs time used: %6s s", timeused));
+		Assert.assertEquals(repeat, dbPro.nQueryForObject("select count(*) from users"));
+
+		dbPro.nExecute("delete from users");
+		start = System.currentTimeMillis();
 		dbPro.nBatchBegin();
-		for (int i = 0; i < 200; i++) {
+		for (long i = 0; i < repeat; i++) {
 			user.setName("Name" + i);
 			user.setAddress("Address" + i);
 			dbPro.iExecute("insert into users (", inline0(user, "", ", ") + ") ", valuesQuesions());
 		}
 		dbPro.nBatchEnd();
+		end = System.currentTimeMillis();
+		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
+		System.out.println(String.format("Batch execute " + repeat + " SQLs time used: %6s s", timeused));
+		Assert.assertEquals(repeat, dbPro.nQueryForObject("select count(*) from users"));
 
 	}
 
