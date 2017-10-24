@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.github.drinkjava2.jdbpro.DbPro;
+import com.github.drinkjava2.jdialects.Dialect;
 
 import demo.DataSourceConfig.DataSourceBox;
 
@@ -30,7 +31,7 @@ import demo.DataSourceConfig.DataSourceBox;
  * </pre>
  * 
  * @author Yong Zhu
- * @since 1.7.0
+ * @since 1.7.0.1
  */
 public class PaginationDemo {
 
@@ -51,21 +52,32 @@ public class PaginationDemo {
 
 	@Test
 	public void executeTest() {
-		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
-		dbPro.setAllowShowSQL(false);
+		DataSource ds = BeanBox.getBean(DataSourceBox.class);
+		DbPro dbPro = new DbPro(ds);
 		for (int i = 0; i < 20; i++)
 			dbPro.nExecute("insert into users (name,address) values(?,?)", "Name" + i, "Address" + i);
-		List<Map<String, Object>> result = dbPro.nQuery(new MapListHandler(), pagin(3, 5) + "select * from users");
-		Assert.assertEquals(5, result.size());
-		for (Map<String, Object> map : result)
+
+		dbPro.setAllowShowSQL(true);
+
+		Dialect dialect = Dialect.guessDialect(ds);
+
+		List<Map<String, Object>> result1 = dbPro.nQuery(new MapListHandler(),
+				dialect.paginate(3, 5, "select * from users"));
+		Assert.assertEquals(5, result1.size());
+		for (Map<String, Object> map : result1)
 			System.out.println(map);
 
-		System.out.println();
+		dbPro.setPaginator(dialect);
 		List<Map<String, Object>> result2 = dbPro.nQuery(new MapListHandler(),
 				dbPro.paginate(3, 5, "select * from users"));
 		Assert.assertEquals(5, result2.size());
 		for (Map<String, Object> map : result2)
-			System.out.println(map); 
+			System.out.println(map);
+
+		List<Map<String, Object>> result3 = dbPro.nQuery(new MapListHandler(), pagin(3, 5) + "select * from users");
+		Assert.assertEquals(5, result3.size());
+		for (Map<String, Object> map : result3)
+			System.out.println(map);
 	}
 
 }

@@ -64,12 +64,7 @@
       <version>1.7</version>
     </dependency>
     
-     <!-- jdbpro 1.7.0.1 depends on jDialects 1.0.6 -->   
-  	<dependency>  
-		<groupId>com.github.drinkjava2</groupId>
-		<artifactId>jdialects</artifactId>  
-		<version>1.0.6</version>  
-	</dependency>
+ 
 
     <!-- ============================================================================= -->
     <!-- Below dependencies are for unit test only, scope set to "test"                --> 
@@ -103,6 +98,14 @@
       <version>2.4.5</version> <!--will release soon-->
       <scope>test</scope>
     </dependency>  
+    
+    <!--jDialects is a dialect tool support ~70 databases pagination & DDL -->   
+  	<dependency>  
+		<groupId>com.github.drinkjava2</groupId>
+		<artifactId>jdialects</artifactId>  
+		<version>1.0.6</version>  
+		<scope>test</scope>
+	</dependency>
     
     <!-- jTransactions is a transaction tools now have TinyTx and SpringTx 2 implements--> 
     <dependency>
