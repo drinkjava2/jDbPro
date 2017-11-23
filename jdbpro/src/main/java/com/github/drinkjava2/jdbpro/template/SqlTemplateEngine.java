@@ -58,5 +58,5 @@ public interface SqlTemplateEngine {
 	 * @return SqlAndParams instance
 	 */
 	public SqlAndParams render(String sqlTemplate, Map<String, Object> paramMap, Set<String> directReplaceNamesSet);
-
+ 
 }

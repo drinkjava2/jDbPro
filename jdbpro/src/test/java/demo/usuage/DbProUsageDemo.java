@@ -13,6 +13,8 @@ import static com.github.drinkjava2.jdbpro.template.TemplateQueryRunner.replace;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -141,7 +143,23 @@ public class DbProUsageDemo {
 				dbPro.iQueryForObject("select count(*) from users where ", inline0(user, "=?", " and ")));
 		dbPro.iExecute(param0(), "delete from users where ", inline(user, "=?", " or "));
 
-		System.out.println("Example#6: tXxxx Template style methods use default BasicSqlTemplate engine");
+		System.out.println(
+				"Example#6: tXxxx Template style methods use default BasicSqlTemplate engine, param carried by a Map");
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("user", user);
+		dbPro.tExecute(params, "insert into users (name, address) values(#{user.name},#{user.address})");
+		params.clear();
+		params.put("name", "Sam");
+		params.put("addr", "Canada");
+		dbPro.tExecute(params, "update users set name=#{name}, address=#{addr}");
+		Assert.assertEquals(1L,
+				dbPro.tQueryForObject(params, "select count(*) from users where name=#{name} and address=#{addr}"));
+		params.clear();
+		params.put("name", "Sam");
+		params.put("addr", "Canada");
+		dbPro.tExecute(params, "delete from users where name=#{name} or address=#{addr}");
+
+		System.out.println("Example#7: tXxxx Template style methods use default BasicSqlTemplate engine");
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})");
 		put0("name", "Sam");
@@ -153,7 +171,7 @@ public class DbProUsageDemo {
 		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
 				put("addr", "Canada"));
 
-		System.out.println("Example#7: tXxxx Template style but use 'NamedParamSqlTemplate' template engine");
+		System.out.println("Example#8: tXxxx Template style but use 'NamedParamSqlTemplate' template engine");
 		dbPro.setSqlTemplateEngine(NamedParamSqlTemplate.instance());
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(:user.name, :user.address)");

@@ -81,6 +81,10 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 		this.endDelimiter = endDelimiter;
 	}
 
+	public SqlAndParams render(String sqlTemplate, Map<String, Object> paramMap) {
+		return doRender(sqlTemplate, paramMap, startDelimiter, endDelimiter, null);
+	}
+
 	@Override
 	public SqlAndParams render(String sqlTemplate, Map<String, Object> paramMap, Set<String> directReplaceNamesSet) {
 		return doRender(sqlTemplate, paramMap, startDelimiter, endDelimiter, directReplaceNamesSet);
