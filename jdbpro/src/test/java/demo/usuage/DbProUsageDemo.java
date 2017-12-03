@@ -144,7 +144,7 @@ public class DbProUsageDemo {
 		dbPro.iExecute(param0(), "delete from users where ", inline(user, "=?", " or "));
 
 		System.out.println(
-				"Example#6: tXxxx Template style methods use default BasicSqlTemplate engine, param carried by a Map");
+				"Example#6: tXxxx Template style methods use default BasicSqlTemplate engine ");
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("user", user);
 		dbPro.tExecute(params, "insert into users (name, address) values(#{user.name},#{user.address})");
@@ -159,7 +159,7 @@ public class DbProUsageDemo {
 		params.put("addr", "Canada");
 		dbPro.tExecute(params, "delete from users where name=#{name} or address=#{addr}");
 
-		System.out.println("Example#7: tXxxx Template style methods use default BasicSqlTemplate engine");
+		System.out.println("Example#7: tXxxx Template + Inline style ");
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})");
 		put0("name", "Sam");

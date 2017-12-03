@@ -8,15 +8,16 @@ jDbPro是一个建立于Apache Commons DbUtils(以下简称DbUtils)上，并对�
 2.添加Inline风格SQL支持，Inline风格利用Threadlocal方式传递SQL参数，具有简单、易维护的优点。关于Inline风格的详细介绍请参见[发现一种简单的SQL包装方法](http://www.iteye.com/topic/1145415)一文。  
 3.添加SQL模板支持，将一些长SQL写在模板中是一种比较好的实践。jDbPro开放式架构设计为可配置使用任意第三方模板(调用setSqlTemplateEngine方法)，并自带一个简易的模板实现。  
 4.改进数据源管理，可轻易配置使用第三方事务管理服务，如Spring声明式事务，抛弃落后的TransactionAwareDataSourceProxy代理方式。  
-5.与原有的DbUtils100%兼容，这是因为DbPro类的父类是QueryRunner。对于已经使用DbUtils的项目，只需要将QueryRunner换成DbPro,即可无缝升级。  
+5.与原有的DbUtils100%兼容，这是因为DbPro类的父类是QueryRunner。对于已经使用DbUtils的遗留项目，只需要将QueryRunner换成DbPro,即可无缝升级。 
+6.添加了日志和批处理支持。setAllowShowSQL()方法设定是否充许Logger输出SQL日志。nBatchBegin、nBatchEnd两个方法分别用于设定当前线程批处理写入的开始和终止。
 
 jDbPro是作为jSqlBox项目的内核而开发的，它是一个承上(包装JDBC，支持多种SQL写法)启下(作为ORM项目内核)的项目，但它本身也是一个独立的工具，可以单独使用，其运行环境为Java6或以上。  
 作为ORM项目的内核，jDbPro仅关注于改进JDBC操作的易用性，它不考虑对象映射、关联映射、跨数据库、分页等高级功能，这些高级功能属于jSqlBox项目负责的范畴。jSqlBox的设计理念是尽量将每个功能点设计成独立的小项目，隔离它们的相互依赖性，每个小项目都可以单独使用，整合在一起就成了jSqlBox，这与Hibernate之类将所有功能都捆绑在一起、不能单独使用的持久层工具是不同的。目前在这一理念下已经开发或正在开发的工具项目有：  
 1)jDialects, 这是一个支持70多种方言的SQL分页、DDL支持、JPA支持工具，用于解决利用JDBC工具进行跨数据库开发的问题。  
 2)jTransactions, 这是一个将声明式事务作为单独的项目提供的工具集，目前包含TinyTx和SpringTx两个实现，今后将不断扩充。  
-3)jBeanBox, 这是一个纯粹的IOC/AOP工具，与Spring内核功能类似，但是更小、更易用, 是TinyTx的最佳伴侣。  
-4)jDbPro, 这是一个JDBC工具，支持多种SQL风格，即可单独使用，也作为ORM项目jSqlBox的内核存在，起承上启下作用。  
-5)jSqlBox, 这是一个基于ActiveRecord模式、支持动态配置的ORM工具，主要作用是整合上述子项目，并支持POJO实体的CRUD和实现基本的关联映射。  
+3)jBeanBox, 这是一个IOC/AOP工具，与Spring-Core功能类似，但是更简单易用。 
+4)jDbPro, 即本项目，支持多种SQL风格，即可单独使用，也作为ORM项目jSqlBox的内核存在。  
+5)jSqlBox, 这是一个整合了上述子项目的ORM工具，除了拥有jDbPro的所有功能并与DbUtils兼容之外，还提供了dataMapperStyle模式、ActiveRecord模式、链式风格、NoSQL风格等高级功能。  
 
 ### 如何引入jDbPro到项目?   
 方式一：手工下载commons-dbutils-1.7.jar和jdbpro-1.7.0.1.jar并放置于项目的类目录。  
@@ -29,7 +30,7 @@ jDbPro是作为jSqlBox项目的内核而开发的，它是一个承上(包装JDB
    </dependency>
 ``` 
 jDbPro仅依赖于DbUtils, 如果使用Maven将自动下载对应其主版本号的DbUtils包commons-dbutils-1.7.jar。   
-如果需要使用事务支持，还需要在pom.xml中添加jTransactions的依赖：
+如果需要使用事务支持，还需要在pom.xml中添加jTransactions项目的依赖：
 ```
     <dependency>
       <groupId>com.github.drinkjava2</groupId>
@@ -109,7 +110,23 @@ jDbPro仅依赖于DbUtils, 如果使用Maven将自动下载对应其主版本号
 				dbPro.iQueryForObject("select count(*) from users where ", inline0(user, "=?", " and ")));
 		dbPro.iExecute(param0(), "delete from users where ", inline(user, "=?", " or "));
 
-		System.out.println("风格6: tXxxx方法，模板风格支持");
+		
+		System.out.println(	"风格6: tXxxx方法，模板风格 ");
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("user", user);
+		dbPro.tExecute(params, "insert into users (name, address) values(#{user.name},#{user.address})");
+		params.clear();
+		params.put("name", "Sam");
+		params.put("addr", "Canada");
+		dbPro.tExecute(params, "update users set name=#{name}, address=#{addr}");
+		Assert.assertEquals(1L,
+				dbPro.tQueryForObject(params, "select count(*) from users where name=#{name} and address=#{addr}"));
+		params.clear();
+		params.put("name", "Sam");
+		params.put("addr", "Canada");
+		dbPro.tExecute(params, "delete from users where name=#{name} or address=#{addr}");
+
+		System.out.println(	"风格7: tXxxx方法，模板+Inline风格 ");
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})");
 		put0("name", "Sam");
@@ -119,6 +136,18 @@ jDbPro仅依赖于DbUtils, 如果使用Maven将自动下载对应其主版本号
 				dbPro.tQueryForObject("select count(*) from users where ${col}=#{name} and address=#{addr}",
 						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
 		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
+				put("addr", "Canada"));
+
+		System.out.println(	"风格8: tXxxx方法，命名参数(仿JdbcTemplate)风格");
+		dbPro.setSqlTemplateEngine(NamedParamSqlTemplate.instance());
+		put0("user", user);
+		dbPro.tExecute("insert into users (name, address) values(:user.name, :user.address)");
+		put0("name", "Sam");
+		put("addr", "Canada");
+		dbPro.tExecute("update users set name=:name, address=:addr");
+		Assert.assertEquals(1L, dbPro.tQueryForObject("select count(*) from users where ${col}=:name and address=:addr",
+				put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
+		dbPro.tExecute("delete from users where name=:name or address=:addr", put0("name", "Sam"),
 				put("addr", "Canada"));
 	}
 ```		
@@ -176,4 +205,4 @@ public class TxDemo {
 }
 ```
 
-以上即为jDbPro全部文档，如有疑问，请下载并运行单元测试示例或查看源码(核心代码只有9个类)。
+以上即为jDbPro全部文档，如有疑问，请查看单元测试源码或项目源码(核心代码只有13个类)。
