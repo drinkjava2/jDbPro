@@ -16,7 +16,7 @@
   <description>jdbpro-package</description>
 
   <modules>
-    <!-- jdbpro-->
+    <!-- jdbpro--> 
     <module>jdbpro</module>
 
   </modules>
