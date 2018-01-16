@@ -30,7 +30,7 @@ import org.apache.commons.dbutils.OutParameter;
 import org.apache.commons.dbutils.ResultSetHandler;
 
 import com.github.drinkjava2.jdbpro.DbPro;
-import com.github.drinkjava2.jdbpro.DbRuntimeException;
+import com.github.drinkjava2.jdbpro.DbProRuntimeException;
 import com.github.drinkjava2.jdbpro.improve.ImprovedQueryRunner;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 
@@ -161,7 +161,7 @@ public class InlineQueryRunner extends ImprovedQueryRunner {
 	 *         ThreadLocaled
 	 */
 	public static String inline(Object bean, String conditionStr, String separatorStr) {
-		DbRuntimeException.assertNotNull(bean, "DbProBeanUtils bean can not be null");
+		DbProRuntimeException.assertNotNull(bean, "DbProBeanUtils bean can not be null");
 		Class<?> beanClass = bean.getClass();
 		BeanInfo beanInfo = null;
 		PropertyDescriptor[] pds = null;
@@ -169,7 +169,7 @@ public class InlineQueryRunner extends ImprovedQueryRunner {
 			beanInfo = Introspector.getBeanInfo(beanClass);
 			pds = beanInfo.getPropertyDescriptors();
 		} catch (Exception e) {
-			throw new DbRuntimeException("DbProBeanUtils  fail to get bean Properties.", e);
+			throw new DbProRuntimeException("DbProBeanUtils  fail to get bean Properties.", e);
 		}
 		if (pds == null || pds.length < 1)
 			return "";
@@ -186,7 +186,7 @@ public class InlineQueryRunner extends ImprovedQueryRunner {
 					sb.append(fieldName).append(conditionStr).append(separatorStr);
 					params[i++] = value;
 				} catch (Exception e) {
-					throw new DbRuntimeException("DbProBeanUtils fail to get bean Properties.", e);
+					throw new DbProRuntimeException("DbProBeanUtils fail to get bean Properties.", e);
 				}
 			}
 		}

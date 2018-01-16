@@ -28,7 +28,8 @@ public class TxDemo {
 	private static Class<?> tx = TinyTx.class;
 	private static ConnectionManager cm = TinyTxConnectionManager.instance();
 	// private static Class<?> tx = SpringTx.class;
-	// private static ConnectionManager cm = SpringTxConnectionManager.instance();
+	// private static ConnectionManager connectionManager =
+	// SpringTxConnectionManager.instance();
 
 	public static class TxBox extends BeanBox {
 		{
@@ -41,13 +42,13 @@ public class TxDemo {
 	@AopAround(TxBox.class)
 	public void tx_Insert1() {
 		dbpro.nExecute("insert into users (id) values(?)", 123);
-		Assert.assertEquals(1L, dbpro.nQueryForObject("select count(*) from users"));
+		Assert.assertEquals(1, dbpro.nQueryForLongValue("select count(*) from users"));
 	}
 
 	@AopAround(TxBox.class)
 	public void tx_Insert2() {
 		dbpro.nExecute("insert into users (id) values(?)", 456);
-		Assert.assertEquals(2L, dbpro.nQueryForObject("select count(*) from users"));
+		Assert.assertEquals(2, dbpro.nQueryForLongValue("select count(*) from users"));
 		System.out.println("Now have 2 records in users table, but will roll back to 1");
 		System.out.println(1 / 0);
 	}
@@ -62,7 +63,7 @@ public class TxDemo {
 		} catch (Exception e) {
 		}
 		dbpro.nExecute("create table users (id varchar(40))engine=InnoDB");
-		Assert.assertEquals(0L, dbpro.nQueryForObject("select count(*) from users"));
+		Assert.assertEquals(0, dbpro.nQueryForLongValue("select count(*) from users"));
 
 		try {
 			tester.tx_Insert1();// this one inserted 1 record
@@ -70,7 +71,7 @@ public class TxDemo {
 		} catch (Exception e) {
 			System.out.println("div/0 exception found, tx_Insert2 should roll back");
 		}
-		Assert.assertEquals(1L, dbpro.nQueryForObject("select count(*) from users"));
+		Assert.assertEquals(1, dbpro.nQueryForLongValue("select count(*) from users"));
 		BeanBox.defaultContext.close();// Release DataSource Pool
 	}
 

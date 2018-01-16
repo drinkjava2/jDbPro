@@ -15,6 +15,10 @@
  */
 package com.github.drinkjava2.jdbpro.improve;
 
+import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.ARRAY_PARAM;
+import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.NO_PARAM;
+import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.SINGLE_PARAM;
+
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,12 +33,12 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 
 import com.github.drinkjava2.jdbpro.DbProLogger;
-import com.github.drinkjava2.jdbpro.DbRuntimeException;
+import com.github.drinkjava2.jdbpro.DbProRuntimeException;
 import com.github.drinkjava2.jdbpro.template.BasicSqlTemplate;
 import com.github.drinkjava2.jdbpro.template.SqlTemplateEngine;
-import com.github.drinkjava2.jdialects.PaginateSupport;
+import com.github.drinkjava2.jdialects.Dialect;
+import com.github.drinkjava2.jdialects.model.TableModel;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
-import static com.github.drinkjava2.jdbpro.improve.SqlExplainSupport.*;
 
 /**
  * ImprovedQueryRunner made below improvements compare DbUtils's QueryRunner:
@@ -46,32 +50,54 @@ import static com.github.drinkjava2.jdbpro.improve.SqlExplainSupport.*;
  * <br/>
  * 2) Override some methods to add logger support <br/>
  * 3) Override some execute/update/query methods to support batch operation and
- * SQL explainers
+ * SqlInterceptor <br/>
+ * 4) Add a dialect property to support dialect features like pagination, DDL...
  * 
  * @author Yong Zhu
  * @since 1.7.0
  */
 @SuppressWarnings({ "all" })
 public class ImprovedQueryRunner extends QueryRunner {
-	private static final DbProLogger staticlogger = DbProLogger.getLog(ImprovedQueryRunner.class);
+	private static final DbProLogger defaultlogger = DbProLogger.getLog(ImprovedQueryRunner.class);
 	/**
 	 * The ConnectionManager determine how to get and release connections from
-	 * DataSource or ThreadLocal or container
+	 * DataSource or ThreadLocal
 	 */
-	protected ConnectionManager cm;
-	protected Boolean allowShowSQL = false;
-	protected DbProLogger logger = staticlogger;
-	protected Integer batchSize = 100;
-	protected SqlTemplateEngine sqlTemplateEngine = BasicSqlTemplate.instance();
-	protected PaginateSupport paginator;
+	protected ConnectionManager connectionManager;
 
-	private static ThreadLocal<ArrayList<SqlExplainSupport>> explainerSupportCache = new ThreadLocal<ArrayList<SqlExplainSupport>>() {
+	/** If set true will output SQL and parameters in logger */
+	protected Boolean allowShowSQL = false;
+
+	/** Logger of current ImprovedQueryRunner */
+	protected DbProLogger logger = defaultlogger;
+
+	/** Default Batch Size, current fixed to 100 */
+	protected Integer batchSize = 100;
+
+	/** SqlTemplateEngine of current ImprovedQueryRunner */
+	protected SqlTemplateEngine sqlTemplateEngine = BasicSqlTemplate.instance();
+
+	/**
+	 * Dialect of current ImprovedQueryRunner, default guessed from DataSource, can
+	 * use setDialect() method to change to other dialect
+	 */
+	protected Dialect dialect;
+
+	/**
+	 * A ThreadLocal type cache to store SqlInterceptor instances, all instance will
+	 * be cleaned after this thread close
+	 */
+	private static ThreadLocal<ArrayList<SqlInterceptor>> explainerSupportCache = new ThreadLocal<ArrayList<SqlInterceptor>>() {
 		@Override
-		protected ArrayList<SqlExplainSupport> initialValue() {
-			return new ArrayList<SqlExplainSupport>();
+		protected ArrayList<SqlInterceptor> initialValue() {
+			return new ArrayList<SqlInterceptor>();
 		}
 	};
 
+	/**
+	 * A ThreadLocal type tag to indicate current all SQL operations should be
+	 * cached
+	 */
 	private ThreadLocal<Boolean> batchEnabled = new ThreadLocal<Boolean>() {
 		@Override
 		protected Boolean initialValue() {
@@ -79,6 +105,9 @@ public class ImprovedQueryRunner extends QueryRunner {
 		}
 	};
 
+	/**
+	 * A ThreadLocal type cache to store batch SQL and parameters
+	 */
 	private ThreadLocal<ArrayList<Object[]>> sqlBatchCache = new ThreadLocal<ArrayList<Object[]>>() {
 		@Override
 		protected ArrayList<Object[]> initialValue() {
@@ -92,27 +121,29 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	public ImprovedQueryRunner(DataSource ds) {
 		super(ds);
+		this.dialect = Dialect.guessDialect(ds);
 	}
 
 	public ImprovedQueryRunner(DataSource ds, ConnectionManager cm) {
 		super(ds);
-		this.cm = cm;
+		this.connectionManager = cm;
+		this.dialect = Dialect.guessDialect(ds);
 	}
 
 	@Override
 	public void close(Connection conn) throws SQLException {
-		if (cm == null)
+		if (connectionManager == null)
 			super.close(conn);
 		else
-			cm.releaseConnection(conn, this.getDataSource());
+			connectionManager.releaseConnection(conn, this.getDataSource());
 	}
 
 	@Override
 	public Connection prepareConnection() throws SQLException {
-		if (cm == null)
+		if (connectionManager == null)
 			return super.prepareConnection();
 		else
-			return cm.getConnection(this.getDataSource());
+			return connectionManager.getConnection(this.getDataSource());
 	}
 
 	@Override
@@ -125,37 +156,98 @@ public class ImprovedQueryRunner extends QueryRunner {
 	@Override
 	protected PreparedStatement prepareStatement(Connection conn, String sql) throws SQLException {
 		if (this.getAllowShowSQL() && !batchEnabled.get())
-			logger.info(formatSql(sql));
+			logger.info(formatSqlForLoggerOutput(sql));
 		return super.prepareStatement(conn, sql);
 	}
 
 	@Override
 	public void fillStatement(PreparedStatement stmt, Object... params) throws SQLException {
 		if (this.getAllowShowSQL() && !batchEnabled.get())
-			logger.info(formatParameters(params));
+			logger.info(formatParametersForLoggerOutput(params));
 		super.fillStatement(stmt, params);
 	}
 
-	/**
-	 * Format SQL, subClass can override this method to customise SQL format
-	 */
-	protected String formatSql(String sql) {
-		return "SQL: " + sql;
+	// ========== Dialect about methods ===============
+	private void assertDialectNotNull() {
+		if (dialect == null)
+			throw new DbProRuntimeException("Try use a dialect method but dialect is null");
 	}
 
-	/**
-	 * Format parameters, subClass can override this method to customise
-	 * parameters format
-	 */
-	protected String formatParameters(Object... params) {
-		return "Parameters: " + Arrays.deepToString(params);
+	/** Shortcut call to dialect.paginate method */
+	public String paginate(int pageNumber, int pageSize, String sql) {
+		assertDialectNotNull();
+		return dialect.paginate(pageNumber, pageSize, sql);
+	}
+
+	/** Shortcut call to dialect.translate method */
+	public String translate(int pageNumber, int pageSize, String sql) {
+		assertDialectNotNull();
+		return dialect.paginate(pageNumber, pageSize, sql);
+	}
+
+	/** Shortcut call to dialect.paginAndTrans method */
+	public String paginAndTrans(int pageNumber, int pageSize, String sql) {
+		assertDialectNotNull();
+		return dialect.paginAndTrans(pageNumber, pageSize, sql);
+	}
+
+	/** Shortcut call to dialect.toCreateDDL method */
+	public String[] toCreateDDL(Class<?>... entityClasses) {
+		assertDialectNotNull();
+		return dialect.toCreateDDL(entityClasses);
+	}
+
+	/** Shortcut call to dialect.toDropDDL method */
+	public String[] toDropDDL(Class<?>... entityClasses) {
+		assertDialectNotNull();
+		return dialect.toDropDDL(entityClasses);
+	}
+
+	/** Shortcut call to dialect.toDropAndCreateDDL method */
+	public String[] toDropAndCreateDDL(Class<?>... entityClasses) {
+		assertDialectNotNull();
+		return dialect.toDropAndCreateDDL(entityClasses);
+	}
+
+	/** Shortcut call to dialect.toCreateDDL method */
+	public String[] toCreateDDL(TableModel... tables) {
+		assertDialectNotNull();
+		return dialect.toCreateDDL(tables);
+	}
+
+	/** Shortcut call to dialect.toDropDDL method */
+	public String[] toDropDDL(TableModel... tables) {
+		assertDialectNotNull();
+		return dialect.toDropDDL(tables);
+	}
+
+	/** Shortcut call to dialect.toDropAndCreateDDL method */
+	public String[] toDropAndCreateDDL(TableModel... tables) {
+		assertDialectNotNull();
+		return dialect.toDropAndCreateDDL(tables);
 	}
 
 	// =========== Explain SQL about methods========================
 	/**
+	 * Format SQL for logger output, subClass can override this method to customise
+	 * SQL format
+	 */
+	protected String formatSqlForLoggerOutput(String sql) {
+		return "SQL: " + sql;
+	}
+
+	/**
+	 * Format parameters for logger output, subClass can override this method to
+	 * customise parameters format
+	 */
+	protected String formatParametersForLoggerOutput(Object... params) {
+		return "Parameters: " + Arrays.deepToString(params);
+	}
+
+	/**
 	 * Add a explainer
 	 */
-	public static ArrayList<SqlExplainSupport> getCurrentExplainers() {
+	public static ArrayList<SqlInterceptor> getCurrentExplainers() {
 		return explainerSupportCache.get();
 	}
 
@@ -164,33 +256,16 @@ public class ImprovedQueryRunner extends QueryRunner {
 	 */
 	public String explainSql(String sql, int paramType, Object paramOrParams) {
 		String newSQL = sql;
-		for (SqlExplainSupport explainer : getCurrentExplainers())
-			newSQL = explainer.explainSql(this, newSQL, paramType, paramOrParams);
+		for (SqlInterceptor explainer : getCurrentExplainers())
+			newSQL = explainer.handleSql(this, newSQL, paramType, paramOrParams);
 		return newSQL;
 	}
 
 	public Object explainResult(Object result) {
 		Object newObj = result;
-		for (SqlExplainSupport explainer : getCurrentExplainers())
-			newObj = explainer.explainResult(result);
+		for (SqlInterceptor explainer : getCurrentExplainers())
+			newObj = explainer.handleResult(result);
 		return newObj;
-	}
-
-	/**
-	 * Return a empty "" String and save a ThreadLocal pageNumber and pageSize
-	 * array in current thread, it will be used by SqlBoxContext's query
-	 * methods.
-	 */
-	public static String pagin(int pageNumber, int pageSize) {
-		getCurrentExplainers().add(new PaginSqlExplainer(pageNumber, pageSize));
-		return "";
-	}
-
-	/** Return a paginated SQL by call dialect's paginate method */
-	public String paginate(int pageNumber, int pageSize, String sql) {
-		if (paginator == null)
-			throw new DbRuntimeException("Can not explain pagination SQL when paginator is null");
-		return paginator.paginate(pageNumber, pageSize, sql);
 	}
 
 	// === Batch execute methods======
@@ -203,7 +278,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			return;
 		Object[] f = sqlCacheList.get(0);// first row
 		if (f.length != 6)
-			throw new DbRuntimeException("Unexpected batch cached SQL format");
+			throw new DbProRuntimeException("Unexpected batch cached SQL format");
 		int paramLenth = 0;
 		if ("i1".equals(f[0]) || "i3".equals(f[0]) || "u1".equals(f[0]) || "u4".equals(f[0]))
 			paramLenth = 0;
@@ -229,9 +304,9 @@ public class ImprovedQueryRunner extends QueryRunner {
 		ResultSetHandler rsh = (ResultSetHandler) f[1];
 		if (this.getAllowShowSQL()) {
 			logger.info("Batch execute " + sqlCacheList.size() + " SQLs");
-			logger.info(formatSql(sql));
-			logger.info("First row " + formatParameters(allParams[0]));
-			logger.info("Last row " + formatParameters(allParams[allParams.length - 1]));
+			logger.info(formatSqlForLoggerOutput(sql));
+			logger.info("First row " + formatParametersForLoggerOutput(allParams[0]));
+			logger.info("Last row " + formatParametersForLoggerOutput(allParams[allParams.length - 1]));
 		}
 		if ("e1".equals(f[0]) || "i1".equals(f[0]) || "u1".equals(f[0]) || "u2".equals(f[0]) || "u3".equals(f[0]))
 			super.batch(conn, sql, allParams);
@@ -242,7 +317,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 		else if ("e4".equals(f[0]) || "i4".equals(f[0]))
 			super.insertBatch(sql, rsh, allParams);
 		else
-			throw new DbRuntimeException("unknow batch sql operation type +'" + f[0] + "'");
+			throw new DbProRuntimeException("unknow batch sql operation type +'" + f[0] + "'");
 		sqlBatchCache.get().clear();
 	}
 
@@ -267,7 +342,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 		try {
 			batchFlush();
 		} catch (Exception e) {
-			throw new DbRuntimeException(e);
+			throw new DbProRuntimeException(e);
 		}
 	}
 
@@ -276,7 +351,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 		try {
 			batchBegin();
 		} catch (Exception e) {
-			throw new DbRuntimeException(e);
+			throw new DbProRuntimeException(e);
 		}
 	}
 
@@ -285,7 +360,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 		try {
 			batchEnd();
 		} catch (Exception e) {
-			throw new DbRuntimeException(e);
+			throw new DbProRuntimeException(e);
 		}
 	}
 
@@ -447,7 +522,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 	@Override
 	public int update(Connection conn, String sql, Object param) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, OBJECT_PARAM, param);
+			String explainedSql = explainSql(sql, SINGLE_PARAM, param);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u2", null, param, explainedSql, conn, null);
 				return 0;
@@ -495,7 +570,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 	@Override
 	public int update(String sql, Object param) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, OBJECT_PARAM, param);
+			String explainedSql = explainSql(sql, SINGLE_PARAM, param);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u5", null, param, explainedSql, null, null);
 				return 0;
@@ -522,6 +597,49 @@ public class ImprovedQueryRunner extends QueryRunner {
 		} finally {
 			getCurrentExplainers().clear();
 		}
+	}
+
+	/**
+	 * Convert paramList to 2d array for insertBatch use, insertBatch's last
+	 * parameter is a 2d array, not easy to use
+	 */
+	private static Object[][] toArray(List<List<?>> paramList) {
+		Object[][] array = new Object[paramList.size()][];
+		int i = 0;
+		for (List<?> item : paramList)
+			array[i++] = item.toArray(new Object[item.size()]);
+		return array;
+	}
+
+	/**
+	 * Executes the given batch of INSERT SQL statements, connection is get from
+	 * current dataSource
+	 * 
+	 * @param sql The SQL statement to execute.
+	 * @param rsh The handler used to create the result object
+	 * @param paramList the parameters for all SQLs, list.get(0) is the first SQL's
+	 *            parameters
+	 * @return The result generated by the handler.
+	 * @throws SQLException if a database access error occurs
+	 */
+	public <T> T insertBatch(String sql, ResultSetHandler<T> rsh, List<List<?>> paramList) throws SQLException {
+		return insertBatch(sql, rsh, toArray(paramList));
+	}
+
+	/**
+	 * Executes the given batch of INSERT SQL statements
+	 * 
+	 * @param conn The connection
+	 * @param sql The SQL statement to execute.
+	 * @param rsh The handler used to create the result object
+	 * @param paramList the parameters for all SQLs, list.get(0) is the first SQL's
+	 *            parameters
+	 * @return The result generated by the handler.
+	 * @throws SQLException if a database access error occurs
+	 */
+	public <T> T insertBatch(Connection conn, String sql, ResultSetHandler<T> rsh, List<List<?>> paramList)
+			throws SQLException {
+		return this.insertBatch(conn, sql, rsh, toArray(paramList));
 	}
 
 	public <T> T query(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
@@ -586,11 +704,11 @@ public class ImprovedQueryRunner extends QueryRunner {
 	}
 
 	public ConnectionManager getConnectionManager() {
-		return cm;
+		return connectionManager;
 	}
 
 	public void setConnectionManager(ConnectionManager connectionManager) {
-		this.cm = connectionManager;
+		this.connectionManager = connectionManager;
 	}
 
 	public Boolean getAllowShowSQL() {
@@ -621,12 +739,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 		return batchEnabled.get();
 	}
 
-	public PaginateSupport getPaginator() {
-		return paginator;
+	public Dialect getDialect() {
+		return dialect;
 	}
 
-	public void setPaginator(PaginateSupport paginator) {
-		this.paginator = paginator;
+	public void setDialect(Dialect dialect) {
+		this.dialect = dialect;
 	}
 
 }

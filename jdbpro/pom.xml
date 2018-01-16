@@ -4,7 +4,7 @@
  
  <groupId>com.github.drinkjava2</groupId>
  <artifactId>jdbpro</artifactId>
- <version>1.7.0.1</version>
+ <version>1.7.0.2</version>
  <packaging>jar</packaging> 
  
  <name>jdbpro</name>
@@ -57,15 +57,20 @@
 
  <dependencies>   
 
-    <!-- jdbpro 1.7.0.1 depends on Apache Commons DbUtils 1.7 -->   
+    <!-- jDbPro1.7.0.2 depends on Apache Commons DbUtils 1.7 -->   
     <dependency>
       <groupId>commons-dbutils</groupId>
       <artifactId>commons-dbutils</artifactId>
       <version>1.7</version>
-    </dependency>
-    
+    </dependency> 
+   
+    <!-- jDbPro1.7.0.2 depends on jdialects1.0.7 -->    
+    <dependency>
+      <groupId>com.github.drinkjava2</groupId>
+      <artifactId>jdialects</artifactId>
+      <version>1.0.7</version>
+    </dependency>  
  
-
     <!-- ============================================================================= -->
     <!-- Below dependencies are for unit test only, scope set to "test"                --> 
     <!-- ============================================================================= --> 
@@ -97,15 +102,7 @@
       <artifactId>jbeanbox</artifactId>
       <version>2.4.5</version> <!--will release soon-->
       <scope>test</scope>
-    </dependency>  
-    
-    <!--jDialects is a dialect tool support ~70 databases pagination & DDL -->   
-  	<dependency>  
-		<groupId>com.github.drinkjava2</groupId>
-		<artifactId>jdialects</artifactId>  
-		<version>1.0.6</version>  
-		<scope>test</scope>
-	</dependency>
+    </dependency>   
     
     <!-- jTransactions is a transaction tools now have TinyTx and SpringTx 2 implements--> 
     <dependency>
@@ -113,15 +110,7 @@
       <artifactId>jtransactions</artifactId>
       <version>1.0.0</version>
       <scope>test</scope>
-    </dependency>
-    
-    <!-- jDialect is a database dialect tool for pagination and DDL -->    
-    <!--dependency>
-       <groupId>com.github.drinkjava2</groupId>
-       <artifactId>jdialects</artifactId>
-       <version>1.0.4</version>
-       <scope>test</scope>
-    </dependency-->
+    </dependency> 
 
    <!-- HikariCP is a dataSource pool quicker than c3p0 -->
     <dependency>
@@ -166,10 +155,7 @@
       <artifactId>spring-aop</artifactId>
       <version>4.3.10.RELEASE</version>
       <scope>test</scope>
-    </dependency>
-    
-    
-    
+    </dependency> 
         
 </dependencies> 
  

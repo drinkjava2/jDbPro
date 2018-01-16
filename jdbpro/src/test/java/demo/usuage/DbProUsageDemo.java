@@ -95,8 +95,8 @@ public class DbProUsageDemo {
 			conn = dbPro.prepareConnection();
 			dbPro.execute(conn, "insert into users (name,address) values(?,?)", "Sam", "Canada");
 			dbPro.execute(conn, "update users set name=?, address=?", "Sam", "Canada");
-			Assert.assertEquals(1L, dbPro.queryForObject(conn, "select count(*) from users where name=? and address=?",
-					"Sam", "Canada"));
+			Assert.assertEquals(1, ((Number) dbPro.queryForObject(conn,
+					"select count(*) from users where name=? and address=?", "Sam", "Canada")).longValue());
 			dbPro.execute(conn, "delete from users where name=? or address=?", "Sam", "Canada");
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -112,8 +112,8 @@ public class DbProUsageDemo {
 		try {
 			dbPro.execute("insert into users (name,address) values(?,?)", "Sam", "Canada");
 			dbPro.execute("update users set name=?, address=?", "Sam", "Canada");
-			Assert.assertEquals(1L,
-					dbPro.queryForObject("select count(*) from users where name=? and address=?", "Sam", "Canada"));
+			Assert.assertEquals(1,
+					dbPro.queryForLongValue("select count(*) from users where name=? and address=?", "Sam", "Canada"));
 			dbPro.execute("delete from users where name=? or address=?", "Sam", "Canada");
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -122,8 +122,8 @@ public class DbProUsageDemo {
 		System.out.println("Example#3: nXxxx methods no need catch SQLException");
 		dbPro.nExecute("insert into users (name,address) values(?,?)", "Sam", "Canada");
 		dbPro.nExecute("update users set name=?, address=?", "Sam", "Canada");
-		Assert.assertEquals(1L,
-				dbPro.nQueryForObject("select count(*) from users where name=? and address=?", "Sam", "Canada"));
+		Assert.assertEquals(1,
+				dbPro.nQueryForLongValue("select count(*) from users where name=? and address=?", "Sam", "Canada"));
 		dbPro.nExecute("delete from users where name=? or address=?", "Sam", "Canada");
 
 		System.out.println("Example#4: iXxxx In-line style methods");
@@ -133,18 +133,17 @@ public class DbProUsageDemo {
 				") ", valuesQuesions());
 		param0("Sam", "Canada");
 		dbPro.iExecute("update users set name=?,address=?");
-		Assert.assertEquals(1L, dbPro.iQueryForObject("select count(*) from users where name=" + question0("Sam")));
+		Assert.assertEquals(1, dbPro.iQueryForLongValue("select count(*) from users where name=" + question0("Sam")));
 		dbPro.iExecute("delete from users where name=", question0("Sam"), " and address=", question("Canada"));
 
 		System.out.println("Example#5: Another usage of iXxxx inline style");
 		dbPro.iExecute("insert into users (", inline0(user, "", ", ") + ") ", valuesQuesions());
 		dbPro.iExecute("update users set ", inline0(user, "=?", ", "));
-		Assert.assertEquals(1L,
-				dbPro.iQueryForObject("select count(*) from users where ", inline0(user, "=?", " and ")));
+		Assert.assertEquals(1,
+				dbPro.iQueryForLongValue("select count(*) from users where ", inline0(user, "=?", " and ")));
 		dbPro.iExecute(param0(), "delete from users where ", inline(user, "=?", " or "));
 
-		System.out.println(
-				"Example#6: tXxxx Template style methods use default BasicSqlTemplate engine ");
+		System.out.println("Example#6: tXxxx Template style methods use default BasicSqlTemplate engine ");
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("user", user);
 		dbPro.tExecute(params, "insert into users (name, address) values(#{user.name},#{user.address})");
@@ -152,8 +151,8 @@ public class DbProUsageDemo {
 		params.put("name", "Sam");
 		params.put("addr", "Canada");
 		dbPro.tExecute(params, "update users set name=#{name}, address=#{addr}");
-		Assert.assertEquals(1L,
-				dbPro.tQueryForObject(params, "select count(*) from users where name=#{name} and address=#{addr}"));
+		Assert.assertEquals(1,
+				dbPro.tQueryForLongValue(params, "select count(*) from users where name=#{name} and address=#{addr}"));
 		params.clear();
 		params.put("name", "Sam");
 		params.put("addr", "Canada");
@@ -165,8 +164,8 @@ public class DbProUsageDemo {
 		put0("name", "Sam");
 		put("addr", "Canada");
 		dbPro.tExecute("update users set name=#{name}, address=#{addr}");
-		Assert.assertEquals(1L,
-				dbPro.tQueryForObject("select count(*) from users where ${col}=#{name} and address=#{addr}",
+		Assert.assertEquals(1,
+				dbPro.tQueryForLongValue("select count(*) from users where ${col}=#{name} and address=#{addr}",
 						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
 		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
 				put("addr", "Canada"));
@@ -178,8 +177,9 @@ public class DbProUsageDemo {
 		put0("name", "Sam");
 		put("addr", "Canada");
 		dbPro.tExecute("update users set name=:name, address=:addr");
-		Assert.assertEquals(1L, dbPro.tQueryForObject("select count(*) from users where ${col}=:name and address=:addr",
-				put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
+		Assert.assertEquals(1,
+				dbPro.tQueryForLongValue("select count(*) from users where ${col}=:name and address=:addr",
+						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
 		dbPro.tExecute("delete from users where name=:name or address=:addr", put0("name", "Sam"),
 				put("addr", "Canada"));
 	}

@@ -86,7 +86,7 @@ public class BatchOperationDemo {
 		long end = System.currentTimeMillis();
 		String timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
 		System.out.println(String.format("Non-Batch execute " + repeat + " SQLs time used: %6s s", timeused));
-		Assert.assertEquals(repeat, dbPro.nQueryForObject("select count(*) from users"));
+		Assert.assertEquals(repeat, dbPro.nQueryForLongValue("select count(*) from users"));
 
 		dbPro.nExecute("delete from users");
 		start = System.currentTimeMillis();
@@ -96,12 +96,12 @@ public class BatchOperationDemo {
 			user.setAddress("Address" + i);
 			dbPro.iExecute("insert into users (", inline0(user, "", ", ") + ") ", valuesQuesions());
 		}
+
 		dbPro.nBatchEnd();
 		end = System.currentTimeMillis();
 		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
 		System.out.println(String.format("Batch execute " + repeat + " SQLs time used: %6s s", timeused));
-		Assert.assertEquals(repeat, dbPro.nQueryForObject("select count(*) from users"));
-
+		Assert.assertEquals(repeat, dbPro.nQueryForLongValue("select count(*) from users"));
 	}
 
 }

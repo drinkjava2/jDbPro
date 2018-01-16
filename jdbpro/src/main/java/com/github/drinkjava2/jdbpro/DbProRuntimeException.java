@@ -16,35 +16,35 @@
 package com.github.drinkjava2.jdbpro;
 
 /**
- * This DbRuntimeException only used to wrap a SQLException to a Runtime type
- * Exception to avoid force user to catch SQLException. Usually used together
- * with an IOC/AOP tool like Spring, it will catch any runtime Exception and
- * roll back the transaction.
+ * This DbProRuntimeException only used to wrap a SQLException to a Runtime type
+ * Exception to avoid each time to catch annoying SQLException. Usually used
+ * together with an IOC/AOP tool like Spring, it will catch runtime Exception
+ * and roll back transaction.
  *
  * @author Yong Zhu
  * @since 1.7.0
  */
-public class DbRuntimeException extends RuntimeException {
+public class DbProRuntimeException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 
-	public DbRuntimeException() {
+	public DbProRuntimeException() {
 		super();
 	}
 
-	public DbRuntimeException(Throwable cause) {
+	public DbProRuntimeException(Throwable cause) {
 		super(cause);
 	}
 
-	public DbRuntimeException(String msg) {
+	public DbProRuntimeException(String msg) {
 		super(msg);
 	}
 
-	public DbRuntimeException(String msg, Throwable cause) {
+	public DbProRuntimeException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 
 	public static void assertNotNull(Object object, String msg) {
 		if (object == null)
-			throw new DbRuntimeException(msg);
+			throw new DbProRuntimeException(msg);
 	}
 }
