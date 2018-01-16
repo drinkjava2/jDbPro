@@ -794,4 +794,13 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 		}
 	}
 
+	/** Quite execute a SQL, do not throw any exception */
+	public int quiteExecute(String sql, Object... params) {
+		try {
+			return execute(sql, params);
+		} catch (Exception e) {
+			return -1;
+		}
+	}
+
 }
