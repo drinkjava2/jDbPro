@@ -433,7 +433,7 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * @return The object returned by the handler.
 	 * @throws SQLException if a database access error occurs
 	 */ 
-	public <T> T templateQuery(Map<String, Object> paramMap, Connection conn, ResultSetHandler<T> rsh, String... templateSQL) throws SQLException {
+	public <T> T templateQuery(Connection conn, Map<String, Object> paramMap,   ResultSetHandler<T> rsh, String... templateSQL) throws SQLException {
 		SqlAndParams sp = templateToSqlAndParams(paramMap, templateSQL);
 		return this.<T>query(conn, sp.getSql(), rsh, sp.getParams());
 	}
@@ -470,7 +470,7 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * @throws SQLException
 	 *             if a database access error occurs
 	 */
-	public int templateUpdate(Map<String, Object> paramMap, Connection conn, String... templateSQL) throws SQLException {
+	public int templateUpdate(Connection conn, Map<String, Object> paramMap,  String... templateSQL) throws SQLException {
 		SqlAndParams sp = templateToSqlAndParams(paramMap, templateSQL);
 		return update(conn, sp.getSql(), sp.getParams());
 	}
@@ -531,7 +531,7 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * @throws SQLException
 	 *             if a database access error occurs
 	 */
-	public <T> T templateInsert(Map<String, Object> paramMap, Connection conn, ResultSetHandler<T> rsh, String... templateSQL) throws SQLException {
+	public <T> T templateInsert(Connection conn,Map<String, Object> paramMap,   ResultSetHandler<T> rsh, String... templateSQL) throws SQLException {
 		SqlAndParams sp = templateToSqlAndParams(paramMap, templateSQL);
 		return insert(conn, sp.getSql(), rsh, sp.getParams());
 	}
@@ -547,16 +547,16 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * {@link #templateUpdate(java.sql.Connection, java.lang.String...) }. If
 	 * the stored procedure returns result sets, use
 	 * {@link #templateExecute(java.sql.Connection, org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
-	 * @param paramMap The parameters stored in Map
-	 * @param conn
-	 *            The connection to use to run the query.
+ 	 * @param conn
+	 *            The connection to use to run the query. 
+	 * @param paramMap The parameters stored in Map 
 	 * @param templateSQL
 	 *            the SQL template.
 	 * @return The number of rows updated.
 	 * @throws SQLException
 	 *             if a database access error occurs
 	 */
-	public int templateExecute(Map<String, Object> paramMap, Connection conn, String... templateSQL) throws SQLException {
+	public int templateExecute(Connection conn, Map<String, Object> paramMap,  String... templateSQL) throws SQLException {
 		SqlAndParams sp = templateToSqlAndParams(paramMap, templateSQL);
 		return this.execute(conn, sp.getSql(), sp.getParams());
 	}
@@ -600,11 +600,12 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * (if there are no OUT parameters) or
 	 * {@link #templateExecute(java.sql.Connection, java.lang.String...) } (if
 	 * there are no result sets).
+	 * 
+	 * @param conn
+	 *            The connection to use to run the query. 
 	 * @param paramMap The parameters stored in Map
 	 * @param <T>
 	 *            The type of object that the handler returns
-	 * @param conn
-	 *            The connection to use to run the query.
 	 * @param rsh
 	 *            The result set handler
 	 * @param templateSQL
@@ -613,7 +614,7 @@ public class TemplateQueryRunner extends InlineQueryRunner {
 	 * @throws SQLException
 	 *             if a database access error occurs
 	 */
-	public <T> List<T> templateExecute(Map<String, Object> paramMap, Connection conn, ResultSetHandler<T> rsh, String... templateSQL)
+	public <T> List<T> templateExecute(Connection conn, Map<String, Object> paramMap,  ResultSetHandler<T> rsh, String... templateSQL)
 			throws SQLException {
 		SqlAndParams sp = templateToSqlAndParams(paramMap, templateSQL);
 		return this.execute(conn, sp.getSql(), rsh, sp.getParams());
