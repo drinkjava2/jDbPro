@@ -1,4 +1,4 @@
-package demo;
+package com.github.drinkjava2;
 
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.zaxxer.hikari.HikariDataSource;

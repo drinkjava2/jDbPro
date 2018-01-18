@@ -130,7 +130,7 @@ public class InlineQueryRunner extends ImprovedQueryRunner {
 	 * @param inlineSQL
 	 * @return SqlAndParams instance
 	 */
-	protected SqlAndParams inlineToSqlAndParams(String... inlineSQL) {
+	public static SqlAndParams inlineToSqlAndParams(String... inlineSQL) {
 		try {
 			String sql = null;
 			if (inlineSQL != null) {

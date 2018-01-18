@@ -1,4 +1,4 @@
-package demo.usuage;
+package com.github.drinkjava2.demo;
 
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline;
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline0;
@@ -23,11 +23,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.github.drinkjava2.DataSourceConfig.DataSourceBox;
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.github.drinkjava2.jdbpro.DbPro;
 import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
-
-import demo.DataSourceConfig.DataSourceBox;
 
 /**
  * This is DbPro usage demo, show different SQL style

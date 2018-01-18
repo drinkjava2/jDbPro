@@ -1,4 +1,4 @@
-package demo.transaction;
+package com.github.drinkjava2.demo;
 
 import java.sql.Connection;
 
@@ -7,14 +7,13 @@ import javax.sql.DataSource;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.github.drinkjava2.DataSourceConfig.DataSourceBox;
 import com.github.drinkjava2.jbeanbox.AopAround;
 import com.github.drinkjava2.jbeanbox.BeanBox;
 import com.github.drinkjava2.jdbpro.DbPro;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 import com.github.drinkjava2.jtransactions.tinytx.TinyTx;
 import com.github.drinkjava2.jtransactions.tinytx.TinyTxConnectionManager;
-
-import demo.DataSourceConfig.DataSourceBox;
 
 /**
  * This is to test TinyTx Declarative Transaction
