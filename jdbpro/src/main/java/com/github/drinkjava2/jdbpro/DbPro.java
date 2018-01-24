@@ -28,6 +28,7 @@ import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 
 import com.github.drinkjava2.jdbpro.inline.InlineQueryRunner;
+import com.github.drinkjava2.jdbpro.template.SqlTemplateEngine;
 import com.github.drinkjava2.jdbpro.template.TemplateQueryRunner;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 
@@ -58,9 +59,20 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 		super(ds, cm);
 	}
 
+	public DbPro(SqlTemplateEngine templateEngine) {
+		super(templateEngine);
+	}
+
+	public DbPro(DataSource ds, SqlTemplateEngine templateEngine) {
+		super(ds, templateEngine);
+	}
+
+	public DbPro(DataSource ds, ConnectionManager cm, SqlTemplateEngine templateEngine) {
+		super(ds, cm, templateEngine);
+	}
+
 	/**
-	 * Clear all In-Line parameters and Template parameters stored in
-	 * ThreadLocal
+	 * Clear all In-Line parameters and Template parameters stored in ThreadLocal
 	 */
 	public static void clearAll() {
 		TemplateQueryRunner.clearBind();
@@ -71,10 +83,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	// DbUtils style methods, throw SQLException
 
 	/**
-	 * Query for an Object, only return the first row and first column's value
-	 * if more than one column or more than 1 rows returned, a null object may
-	 * return if no result found, SQLException may be threw if some SQL
-	 * operation Exception happen. Note: This method does not close connection.
+	 * Query for an Object, only return the first row and first column's value if
+	 * more than one column or more than 1 rows returned, a null object may return
+	 * if no result found, SQLException may be threw if some SQL operation Exception
+	 * happen. Note: This method does not close connection.
 	 * 
 	 * @param sql
 	 *            The SQL
@@ -88,10 +100,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Query for an Object, only return the first row and first column's value
-	 * if more than one column or more than 1 rows returned, a null object may
-	 * return if no result found, SQLException may be threw if some SQL
-	 * operation Exception happen.
+	 * Query for an Object, only return the first row and first column's value if
+	 * more than one column or more than 1 rows returned, a null object may return
+	 * if no result found, SQLException may be threw if some SQL operation Exception
+	 * happen.
 	 * 
 	 * @param sql
 	 *            The SQL
@@ -105,8 +117,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a String object, Note: This method does
-	 * not close connection.
+	 * Execute query and force return a String object, Note: This method does not
+	 * close connection.
 	 * 
 	 * @param sql
 	 *            The SQL
@@ -132,9 +144,9 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a Long object, runtime exception may throw
-	 * if result can not be cast to long, SQLException may throw if SQL
-	 * exception happen, Note: This method does not close connection.
+	 * Execute query and force return a Long object, runtime exception may throw if
+	 * result can not be cast to long, SQLException may throw if SQL exception
+	 * happen, Note: This method does not close connection.
 	 * 
 	 * @param sql
 	 *            The SQL
@@ -147,9 +159,9 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a Long object, runtime exception may throw
-	 * if result can not be cast to long, SQLException may throw if SQL
-	 * exception happen
+	 * Execute query and force return a Long object, runtime exception may throw if
+	 * result can not be cast to long, SQLException may throw if SQL exception
+	 * happen
 	 * 
 	 * @param sql
 	 *            The SQL
@@ -162,8 +174,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute a query and wrap result to Map List, Note: This method does not
-	 * close connection.
+	 * Execute a query and wrap result to Map List, Note: This method does not close
+	 * connection.
 	 * 
 	 * @param sql
 	 *            The SQL String
@@ -195,9 +207,9 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	// Normal style methods but transfer SQLException to DbProRuntimeException
 
 	/**
-	 * Executes the given SELECT SQL query and returns a result object.
-	 * Transaction mode is determined by connectionManager property. Note: this
-	 * method does not close connection
+	 * Executes the given SELECT SQL query and returns a result object. Transaction
+	 * mode is determined by connectionManager property. Note: this method does not
+	 * close connection
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -220,10 +232,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Query for an Object, only return the first row and first column's value
-	 * if more than one column or more than 1 rows returned, a null object may
-	 * return if no result found , DbProRuntimeException may be threw if some
-	 * SQL operation Exception happen.
+	 * Query for an Object, only return the first row and first column's value if
+	 * more than one column or more than 1 rows returned, a null object may return
+	 * if no result found , DbProRuntimeException may be threw if some SQL operation
+	 * Exception happen.
 	 * 
 	 * @param sql
 	 * @param params
@@ -234,8 +246,7 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a String object, no need catch
-	 * SQLException
+	 * Execute query and force return a String object, no need catch SQLException
 	 */
 	public String nQueryForString(Connection conn, String sql, Object... params) {
 		return String.valueOf(nQueryForObject(conn, sql, params));
@@ -254,8 +265,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a List<Map<String, Object>> type result,
-	 * no need catch SQLException
+	 * Execute query and force return a List<Map<String, Object>> type result, no
+	 * need catch SQLException
 	 */
 	public List<Map<String, Object>> nQueryForMapList(Connection conn, String sql, Object... params) {
 		try {
@@ -266,8 +277,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction
-	 * mode is determined by connectionManager property.
+	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction mode
+	 * is determined by connectionManager property.
 	 * 
 	 * @param sql
 	 *            the SQL
@@ -284,8 +295,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given INSERT SQL statement. Transaction mode is determined
-	 * by connectionManager property.
+	 * Executes the given INSERT SQL statement. Transaction mode is determined by
+	 * connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -308,8 +319,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given Batch INSERT SQL statement. Transaction mode is
-	 * determined by connectionManager property.
+	 * Executes the given Batch INSERT SQL statement. Transaction mode is determined
+	 * by connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -333,14 +344,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	/**
 	 * Execute an statement, including a stored procedure call, which does not
 	 * return any result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
-	 * {@link #Update(java.lang.String...) }. If the stored procedure returns
-	 * result sets, use
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
+	 * {@link #Update(java.lang.String...) }. If the stored procedure returns result
+	 * sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
 	 * 
 	 * @param sql
@@ -356,17 +367,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an statement, including a stored procedure call, which returns
-	 * one or more result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an statement, including a stored procedure call, which returns one or
+	 * more result sets. Any parameters which are instances of {@link OutParameter}
+	 * will be registered as OUT parameters. Transaction mode is determined by
+	 * connectionManager property.
 	 * 
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -387,15 +398,15 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Execute a batch of SQL INSERT, UPDATE, or DELETE queries. The
-	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set
-	 * in the constructor. Transaction mode is determined by connectionManager
+	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set in
+	 * the constructor. Transaction mode is determined by connectionManager
 	 * property.
 	 *
 	 * @param sql
 	 *            The SQL to execute.
 	 * @param params
-	 *            An array of query replacement parameters. Each row in this
-	 *            array is one set of batch replacement values.
+	 *            An array of query replacement parameters. Each row in this array
+	 *            is one set of batch replacement values.
 	 * @return The number of rows updated per statement.
 	 */
 	public int[] nBatch(Connection conn, String sql, Object[][] params) {
@@ -408,8 +419,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Executes the given batch of INSERT SQL statements. The
-	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set
-	 * in the constructor. Transaction mode is determined by connectionManager
+	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set in
+	 * the constructor. Transaction mode is determined by connectionManager
 	 * property.
 	 * 
 	 * @param <T>
@@ -432,8 +443,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given SELECT SQL query and returns a result object.
-	 * Transaction mode is determined by connectionManager property.
+	 * Executes the given SELECT SQL query and returns a result object. Transaction
+	 * mode is determined by connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -456,10 +467,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Query for an Object, only return the first row and first column's value
-	 * if more than one column or more than 1 rows returned, a null object may
-	 * return if no result found , DbProRuntimeException may be threw if some
-	 * SQL operation Exception happen.
+	 * Query for an Object, only return the first row and first column's value if
+	 * more than one column or more than 1 rows returned, a null object may return
+	 * if no result found , DbProRuntimeException may be threw if some SQL operation
+	 * Exception happen.
 	 * 
 	 * @param sql
 	 * @param params
@@ -471,8 +482,7 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a String object, no need catch
-	 * SQLException
+	 * Execute query and force return a String object, no need catch SQLException
 	 */
 	public String nQueryForString(String sql, Object... params) {
 		return String.valueOf(nQueryForObject(sql, params));
@@ -491,8 +501,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute query and force return a List<Map<String, Object>> type result,
-	 * no need catch SQLException
+	 * Execute query and force return a List<Map<String, Object>> type result, no
+	 * need catch SQLException
 	 */
 	public List<Map<String, Object>> nQueryForMapList(String sql, Object... params) {
 		try {
@@ -503,8 +513,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction
-	 * mode is determined by connectionManager property.
+	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction mode
+	 * is determined by connectionManager property.
 	 * 
 	 * @param sql
 	 *            the SQL
@@ -522,8 +532,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given INSERT SQL statement. Transaction mode is determined
-	 * by connectionManager property.
+	 * Executes the given INSERT SQL statement. Transaction mode is determined by
+	 * connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -546,8 +556,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given Batch INSERT SQL statement. Transaction mode is
-	 * determined by connectionManager property.
+	 * Executes the given Batch INSERT SQL statement. Transaction mode is determined
+	 * by connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -571,14 +581,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	/**
 	 * Execute an statement, including a stored procedure call, which does not
 	 * return any result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
-	 * {@link #Update(java.lang.String...) }. If the stored procedure returns
-	 * result sets, use
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
+	 * {@link #Update(java.lang.String...) }. If the stored procedure returns result
+	 * sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
 	 * 
 	 * @param sql
@@ -595,17 +605,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an statement, including a stored procedure call, which returns
-	 * one or more result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an statement, including a stored procedure call, which returns one or
+	 * more result sets. Any parameters which are instances of {@link OutParameter}
+	 * will be registered as OUT parameters. Transaction mode is determined by
+	 * connectionManager property.
 	 * 
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -626,15 +636,15 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Execute a batch of SQL INSERT, UPDATE, or DELETE queries. The
-	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set
-	 * in the constructor. Transaction mode is determined by connectionManager
+	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set in
+	 * the constructor. Transaction mode is determined by connectionManager
 	 * property.
 	 *
 	 * @param sql
 	 *            The SQL to execute.
 	 * @param params
-	 *            An array of query replacement parameters. Each row in this
-	 *            array is one set of batch replacement values.
+	 *            An array of query replacement parameters. Each row in this array
+	 *            is one set of batch replacement values.
 	 * @return The number of rows updated per statement.
 	 */
 	public int[] nBatch(String sql, Object[][] params) {
@@ -647,8 +657,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Executes the given batch of INSERT SQL statements. The
-	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set
-	 * in the constructor. Transaction mode is determined by connectionManager
+	 * <code>Connection</code> is retrieved from the <code>DataSource</code> set in
+	 * the constructor. Transaction mode is determined by connectionManager
 	 * property.
 	 * 
 	 * @param <T>
@@ -673,8 +683,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	// ====================================================================
 	// In-Line style and transfer SQLException to DbProRuntimeException
 	/**
-	 * Executes the given SELECT SQL query and returns a result object. Note:
-	 * this method does not close connection
+	 * Executes the given SELECT SQL query and returns a result object. Note: this
+	 * method does not close connection
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -695,11 +705,11 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an In-line style query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen. Note: this method does not close connection
+	 * Execute an In-line style query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen. Note: this method does not
+	 * close connection
 	 * 
 	 * @param sql
 	 * @param params
@@ -715,25 +725,25 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * In-line style execute query and force return a long value, runtime
-	 * exception may throw if result can not be cast to long. Note: this method
-	 * does not close connection
+	 * In-line style execute query and force return a long value, runtime exception
+	 * may throw if result can not be cast to long. Note: this method does not close
+	 * connection
 	 */
 	public long iQueryForLongValue(Connection conn, String... inlineSQL) {
 		return ((Number) iQueryForObject(conn, inlineSQL)).longValue();// NOSONAR
 	}
 
 	/**
-	 * In-Line style execute query and force return a List<Map<String, Object>>
-	 * type result. Note: this method does not close connection
+	 * In-Line style execute query and force return a List<Map<String, Object>> type
+	 * result. Note: this method does not close connection
 	 */
 	public List<Map<String, Object>> iQueryForMapList(Connection conn, String... inlineSQL) {
 		return iQuery(conn, new MapListHandler(), inlineSQL);
 	}
 
 	/**
-	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Note: this
-	 * method does not close connection
+	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Note: this method
+	 * does not close connection
 	 * 
 	 * @param inlineSQL
 	 *            the in-line style SQL *
@@ -772,14 +782,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	/**
 	 * Execute an statement, including a stored procedure call, which does not
 	 * return any result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Note: this
-	 * method does not close connection
+	 * {@link OutParameter} will be registered as OUT parameters. Note: this method
+	 * does not close connection
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
-	 * {@link #inlineUpdate(java.lang.String...) }. If the stored procedure
-	 * returns result sets, use
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
+	 * {@link #inlineUpdate(java.lang.String...) }. If the stored procedure returns
+	 * result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
 	 * <p>
 	 *
@@ -796,17 +806,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an statement, including a stored procedure call, which returns
-	 * one or more result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Note: this
-	 * method does not close connection
+	 * Execute an statement, including a stored procedure call, which returns one or
+	 * more result sets. Any parameters which are instances of {@link OutParameter}
+	 * will be registered as OUT parameters. Note: this method does not close
+	 * connection
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -846,11 +856,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an In-line style query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen.
+	 * Execute an In-line style query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen.
 	 * 
 	 * @param sql
 	 * @param params
@@ -866,24 +875,24 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * In-line style execute query and force return a long value, runtime
-	 * exception may throw if result can not be cast to long
+	 * In-line style execute query and force return a long value, runtime exception
+	 * may throw if result can not be cast to long
 	 */
 	public long iQueryForLongValue(String... inlineSQL) {
 		return ((Number) iQueryForObject(inlineSQL)).longValue();// NOSONAR
 	}
 
 	/**
-	 * In-Line style execute query and force return a List<Map<String, Object>>
-	 * type result
+	 * In-Line style execute query and force return a List<Map<String, Object>> type
+	 * result
 	 */
 	public List<Map<String, Object>> iQueryForMapList(String... inlineSQL) {
 		return iQuery(new MapListHandler(), inlineSQL);
 	}
 
 	/**
-	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction
-	 * mode is determined by connectionManager property.
+	 * Executes the given INSERT, UPDATE, or DELETE SQL statement. Transaction mode
+	 * is determined by connectionManager property.
 	 * 
 	 * @param inlineSQL
 	 *            the in-line style SQL *
@@ -898,8 +907,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the given INSERT SQL statement. Transaction mode is determined
-	 * by connectionManager property.
+	 * Executes the given INSERT SQL statement. Transaction mode is determined by
+	 * connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -922,14 +931,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	/**
 	 * Execute an statement, including a stored procedure call, which does not
 	 * return any result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
-	 * {@link #inlineUpdate(java.lang.String...) }. If the stored procedure
-	 * returns result sets, use
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
+	 * {@link #inlineUpdate(java.lang.String...) }. If the stored procedure returns
+	 * result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
 	 * <p>
 	 *
@@ -946,17 +955,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an statement, including a stored procedure call, which returns
-	 * one or more result sets. Any parameters which are instances of
-	 * {@link OutParameter} will be registered as OUT parameters.Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an statement, including a stored procedure call, which returns one or
+	 * more result sets. Any parameters which are instances of {@link OutParameter}
+	 * will be registered as OUT parameters.Transaction mode is determined by
+	 * connectionManager property.
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -998,11 +1007,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL Template query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen.
+	 * Execute an SQL Template query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen.
 	 * 
 	 * @param templateSQL
 	 * @return An Object or null, Object type determined by SQL content
@@ -1012,8 +1020,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT, UPDATE, or DELETE SQL
-	 * statement. Transaction mode is determined by connectionManager property.
+	 * Executes the template style given INSERT, UPDATE, or DELETE SQL statement.
+	 * Transaction mode is determined by connectionManager property.
 	 * 
 	 * @param templateSQL
 	 *            the SQL template
@@ -1028,8 +1036,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT SQL statement. Transaction mode
-	 * is determined by connectionManager property.
+	 * Executes the template style given INSERT SQL statement. Transaction mode is
+	 * determined by connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -1049,14 +1057,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which does not return any result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * does not return any result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
 	 * {@link #templateUpdate(java.lang.String...) }. If the stored procedure
 	 * returns result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
@@ -1075,17 +1083,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which returns one or more result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * returns one or more result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -1131,11 +1139,11 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL Template query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen. Note: This method does not close connection
+	 * Execute an SQL Template query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen. Note: This method does not
+	 * close connection
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1165,8 +1173,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Template style execute SQL query, force return a Long value, runtime
-	 * Exception may throw if result can not cast to long. Note: This method
-	 * does not close connection
+	 * Exception may throw if result can not cast to long. Note: This method does
+	 * not close connection
 	 */
 	public long tQueryForLongValue(Connection conn, Map<String, Object> paramMap, String... templateSQL) {
 		return ((Number) tQueryForObject(conn, paramMap, templateSQL)).longValue();// NOSONAR
@@ -1174,8 +1182,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 
 	/**
 	 * Template style execute SQL query, force return a Long value, runtime
-	 * Exception may throw if result can not cast to long. Note: This method
-	 * does not close connection
+	 * Exception may throw if result can not cast to long. Note: This method does
+	 * not close connection
 	 */
 	public long tQueryForLongValue(Connection conn, String... templateSQL) {
 		return ((Number) tQueryForObject(conn, templateSQL)).longValue();// NOSONAR
@@ -1199,8 +1207,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT, UPDATE, or DELETE SQL
-	 * statement. Note: This method does not close connection
+	 * Executes the template style given INSERT, UPDATE, or DELETE SQL statement.
+	 * Note: This method does not close connection
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1241,14 +1249,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which does not return any result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Note: This
-	 * method does not close connection
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * does not return any result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Note: This method
+	 * does not close connection
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
 	 * {@link #templateUpdate(java.lang.String...) }. If the stored procedure
 	 * returns result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
@@ -1269,17 +1277,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which returns one or more result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Note: This
-	 * method does not close connection
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * returns one or more result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Note: This method
+	 * does not close connection
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1322,11 +1330,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL Template query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen.
+	 * Execute an SQL Template query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen.
 	 * 
 	 * @param templateSQL
 	 * @return An Object or null, Object type determined by SQL content
@@ -1336,8 +1343,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT, UPDATE, or DELETE SQL
-	 * statement. Transaction mode is determined by connectionManager property.
+	 * Executes the template style given INSERT, UPDATE, or DELETE SQL statement.
+	 * Transaction mode is determined by connectionManager property.
 	 * 
 	 * @param templateSQL
 	 *            the SQL template
@@ -1352,8 +1359,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT SQL statement. Transaction mode
-	 * is determined by connectionManager property.
+	 * Executes the template style given INSERT SQL statement. Transaction mode is
+	 * determined by connectionManager property.
 	 * 
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -1373,14 +1380,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which does not return any result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * does not return any result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
 	 * {@link #templateUpdate(java.lang.String...) }. If the stored procedure
 	 * returns result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
@@ -1399,17 +1406,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which returns one or more result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * returns one or more result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 *
 	 * @param <T>
 	 *            The type of object that the handler returns
@@ -1455,11 +1462,10 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL Template query for an Object, only return the first row
-	 * and first column's value if more than one column or more than 1 rows
-	 * returned, a null object may return if no result found ,
-	 * DbProRuntimeException may be threw if some SQL operation Exception
-	 * happen.
+	 * Execute an SQL Template query for an Object, only return the first row and
+	 * first column's value if more than one column or more than 1 rows returned, a
+	 * null object may return if no result found , DbProRuntimeException may be
+	 * threw if some SQL operation Exception happen.
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1498,24 +1504,22 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Template style query and force return a List<Map<String, Object>> type
-	 * result
+	 * Template style query and force return a List<Map<String, Object>> type result
 	 */
 	public List<Map<String, Object>> tQueryForMapList(String... templateSQL) {
 		return this.tQuery(new MapListHandler(), templateSQL);
 	}
 
 	/**
-	 * Template style query and force return a List<Map<String, Object>> type
-	 * result
+	 * Template style query and force return a List<Map<String, Object>> type result
 	 */
 	public List<Map<String, Object>> tQueryForMapList(Map<String, Object> paramMap, String... templateSQL) {
 		return this.tQuery(paramMap, new MapListHandler(), templateSQL);
 	}
 
 	/**
-	 * Executes the template style given INSERT, UPDATE, or DELETE SQL
-	 * statement. Transaction mode is determined by connectionManager property.
+	 * Executes the template style given INSERT, UPDATE, or DELETE SQL statement.
+	 * Transaction mode is determined by connectionManager property.
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1532,8 +1536,8 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Executes the template style given INSERT SQL statement. Transaction mode
-	 * is determined by connectionManager property.
+	 * Executes the template style given INSERT SQL statement. Transaction mode is
+	 * determined by connectionManager property.
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map
@@ -1555,14 +1559,14 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which does not return any result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * does not return any result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
 	 * Use this method when invoking a stored procedure with OUT parameters that
-	 * does not return any result sets. If you are not invoking a stored
-	 * procedure, or the stored procedure has no OUT parameters, consider using
+	 * does not return any result sets. If you are not invoking a stored procedure,
+	 * or the stored procedure has no OUT parameters, consider using
 	 * {@link #templateUpdate(java.lang.String...) }. If the stored procedure
 	 * returns result sets, use
 	 * {@link #iExecute(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }.
@@ -1583,17 +1587,17 @@ public class DbPro extends TemplateQueryRunner implements NormalJdbcTool {
 	}
 
 	/**
-	 * Execute an SQL template statement, including a stored procedure call,
-	 * which returns one or more result sets. Any parameters which are instances
-	 * of {@link OutParameter} will be registered as OUT parameters. Transaction
-	 * mode is determined by connectionManager property.
+	 * Execute an SQL template statement, including a stored procedure call, which
+	 * returns one or more result sets. Any parameters which are instances of
+	 * {@link OutParameter} will be registered as OUT parameters. Transaction mode
+	 * is determined by connectionManager property.
 	 * <p>
-	 * Use this method when: a) running SQL statements that return multiple
-	 * result sets; b) invoking a stored procedure that return result sets and
-	 * OUT parameters. Otherwise you may wish to use
+	 * Use this method when: a) running SQL statements that return multiple result
+	 * sets; b) invoking a stored procedure that return result sets and OUT
+	 * parameters. Otherwise you may wish to use
 	 * {@link #iQuery(org.apache.commons.dbutils.ResultSetHandler, java.lang.String...) }
-	 * (if there are no OUT parameters) or
-	 * {@link #iExecute(java.lang.String...) } (if there are no result sets).
+	 * (if there are no OUT parameters) or {@link #iExecute(java.lang.String...) }
+	 * (if there are no result sets).
 	 * 
 	 * @param paramMap
 	 *            The parameters stored in Map

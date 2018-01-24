@@ -70,7 +70,7 @@ public class BatchOperationDemo {
 	public void executeTest() {
 		long repeat = 10000L;
 		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
-		dbPro.setAllowShowSQL(false);
+		dbPro.setGlobalAllowShowSQL(false);
 		User user = new User();
 		user.setName("Sam");
 		user.setAddress("Canada");

@@ -41,6 +41,7 @@ import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
  * 
  * @author Yong Zhu
  * @since 1.7.0
+ * 
  */
 public class DbProUsageDemo {
 
@@ -82,8 +83,9 @@ public class DbProUsageDemo {
 
 	@Test
 	public void executeTest() {
-		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
-		dbPro.setAllowShowSQL(true);
+		DataSource ds = (DataSource) BeanBox.getBean(DataSourceBox.class);
+		DbPro dbPro = new DbPro(ds);
+		dbPro.setGlobalAllowShowSQL(true);
 		User user = new User();
 		user.setName("Sam");
 		user.setAddress("Canada");
@@ -170,7 +172,8 @@ public class DbProUsageDemo {
 				put("addr", "Canada"));
 
 		System.out.println("Example#8: tXxxx Template style but use 'NamedParamSqlTemplate' template engine");
-		dbPro.setSqlTemplateEngine(NamedParamSqlTemplate.instance());
+		dbPro = new DbPro(ds, NamedParamSqlTemplate.instance());
+		dbPro.setGlobalAllowShowSQL(true);
 		put0("user", user);
 		dbPro.tExecute("insert into users (name, address) values(:user.name, :user.address)");
 		put0("name", "Sam");

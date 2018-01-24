@@ -26,5 +26,6 @@ public class LoggerTest {
 		Dialect.setAllowShowDialectLog(true);
 		Dialect.MySQL55Dialect.paginate(10, 10, "select * from sometable"); 
 		logger.info("Message output");
+		System.out.println("Message output");
 	}
 }
