@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,10 +15,6 @@
  */
 package com.github.drinkjava2.jdbpro.improve;
 
-import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.ARRAY_PARAM;
-import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.NO_PARAM;
-import static com.github.drinkjava2.jdbpro.improve.SqlInterceptor.SINGLE_PARAM;
-
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,12 +28,14 @@ import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 
+import com.github.drinkjava2.jdbpro.DbPro;
 import com.github.drinkjava2.jdbpro.DbProLogger;
 import com.github.drinkjava2.jdbpro.DbProRuntimeException;
-import com.github.drinkjava2.jdbpro.template.BasicSqlTemplate;
+import com.github.drinkjava2.jdbpro.DbProLogger.DefaultDbProLogger;
+import com.github.drinkjava2.jdbpro.handler.AroundSqlHandler;
+import com.github.drinkjava2.jdbpro.handler.CacheSqlHandler;
+import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
 import com.github.drinkjava2.jdbpro.template.SqlTemplateEngine;
-import com.github.drinkjava2.jdialects.Dialect;
-import com.github.drinkjava2.jdialects.model.TableModel;
 import com.github.drinkjava2.jtransactions.ConnectionManager;
 
 /**
@@ -50,56 +48,35 @@ import com.github.drinkjava2.jtransactions.ConnectionManager;
  * <br/>
  * 2) Override some methods to add logger support <br/>
  * 3) Override some execute/update/query methods to support batch operation and
- * SqlInterceptor <br/>
- * 4) Add a dialect property to support dialect features like pagination, DDL...
+ * AroundSqlHandler <br/>
  * 
  * @author Yong Zhu
  * @since 1.7.0
  */
 @SuppressWarnings({ "all" })
 public class ImprovedQueryRunner extends QueryRunner {
-	private static final DbProLogger defaultlogger = DbProLogger.getLog(ImprovedQueryRunner.class);
-	/**
-	 * The ConnectionManager determine how to get and release connections from
-	 * DataSource or ThreadLocal. To keep thread-safe, only subclass can access this
-	 * variant
-	 */
-	protected ConnectionManager connectionManager;
+	protected static Boolean globalAllowShowSql = false;
+	protected static ConnectionManager globalConnectionManager = null;
+	protected static List<ResultSetHandler> globalResultSetHandlers = null;
+	protected static DbProLogger globalLogger = DefaultDbProLogger.getLog(ImprovedQueryRunner.class);
+	protected static Integer globalBatchSize = 100;
+	protected static SqlTemplateEngine globalTemplateEngine = NamedParamSqlTemplate.instance();
+
+	protected SqlTemplateEngine sqlTemplateEngine = globalTemplateEngine;
+	protected ConnectionManager connectionManager = globalConnectionManager;
+	protected Boolean allowShowSQL = globalAllowShowSql;
+	protected DbProLogger logger = globalLogger;
+	protected Integer batchSize = globalBatchSize;
+	protected List<ResultSetHandler> resultSetHandlers = globalResultSetHandlers;
 
 	/**
-	 * If set true will output SQL and parameters in logger, to keep thread-safe,
-	 * only subclass can access this variant
+	 * A ThreadLocal type cache to store AroundSqlHandler instances, all instance
+	 * will be cleaned after this thread close
 	 */
-	protected Boolean allowShowSQL = false;
-
-	/**
-	 * Logger of current ImprovedQueryRunner, to keep thread-safe, only subclass can
-	 * access this variant
-	 */
-	protected DbProLogger logger = defaultlogger;
-
-	/** Default Batch Size, current fixed to 100 */
-	protected Integer batchSize = 100;
-
-	/**
-	 * SqlTemplateEngine of current ImprovedQueryRunner, to keep thread-safe, only
-	 * subclass can access this variant protected SqlTemplateEngine
-	 * sqlTemplateEngine = BasicSqlTemplate.instance();
-	 * 
-	 * /** Dialect of current ImprovedQueryRunner, default guessed from DataSource,
-	 * can use setDialect() method to change to other dialect, to keep thread-safe,
-	 * only subclass can access this variant
-	 */
-	protected Dialect dialect;
-
-	/**
-	 * A ThreadLocal type cache to store SqlInterceptor instances, all instance will
-	 * be cleaned after this thread close
-	 */
-	private static ThreadLocal<ArrayList<SqlInterceptor>> explainerSupportCache = new ThreadLocal<ArrayList<SqlInterceptor>>() {
+	private static ThreadLocal<ArrayList<ResultSetHandler>> threadedSqlInterceptors = new ThreadLocal<ArrayList<ResultSetHandler>>() {
 		@Override
-		protected ArrayList<SqlInterceptor> initialValue() {
-			return new ArrayList<SqlInterceptor>();
+		protected ArrayList<ResultSetHandler> initialValue() {
+			return new ArrayList<ResultSetHandler>();
 		}
 	};
 
@@ -130,14 +107,55 @@ public class ImprovedQueryRunner extends QueryRunner {
 
 	public ImprovedQueryRunner(DataSource ds) {
 		super(ds);
-		this.dialect = Dialect.guessDialect(ds);
 	}
 
 	public ImprovedQueryRunner(DataSource ds, ConnectionManager cm) {
 		super(ds);
 		this.connectionManager = cm;
-		this.dialect = Dialect.guessDialect(ds);
 	}
+
+	// ==========getter & setter==========
+	public Boolean getAllowShowSQL() {
+		return allowShowSQL;
+	}
+
+	public DbProLogger getLogger() {
+		return logger;
+	}
+
+	public Integer getBatchSize() {
+		return batchSize;
+	}
+
+	public boolean isBatchEnabled() {
+		return batchEnabled.get();
+	}
+
+	public static DbProLogger getGlobalLogger() {
+		return globalLogger;
+	}
+
+	public static void setGlobalLogger(DbProLogger globalLogger) {
+		ImprovedQueryRunner.globalLogger = globalLogger;
+	}
+
+	public static Integer getGlobalBatchSize() {
+		return globalBatchSize;
+	}
+
+	public static void setGlobalBatchSize(Integer globalBatchSize) {
+		ImprovedQueryRunner.globalBatchSize = globalBatchSize;
+	}
+
+	public static SqlTemplateEngine getGlobalTemplateEngine() {
+		return globalTemplateEngine;
+	}
+
+	public static void setGlobalTemplateEngine(SqlTemplateEngine globalTemplateEngine) {
+		ImprovedQueryRunner.globalTemplateEngine = globalTemplateEngine;
+	}
+
+	// End of getter & setters
 
 	@Override
 	public void close(Connection conn) throws SQLException {
@@ -176,66 +194,6 @@ public class ImprovedQueryRunner extends QueryRunner {
 		super.fillStatement(stmt, params);
 	}
 
-	// ========== Dialect about methods ===============
-	private void assertDialectNotNull() {
-		if (dialect == null)
-			throw new DbProRuntimeException("Try use a dialect method but dialect is null");
-	}
-
-	/** Shortcut call to dialect.paginate method */
-	public String paginate(int pageNumber, int pageSize, String sql) {
-		assertDialectNotNull();
-		return dialect.paginate(pageNumber, pageSize, sql);
-	}
-
-	/** Shortcut call to dialect.translate method */
-	public String translate(int pageNumber, int pageSize, String sql) {
-		assertDialectNotNull();
-		return dialect.paginate(pageNumber, pageSize, sql);
-	}
-
-	/** Shortcut call to dialect.paginAndTrans method */
-	public String paginAndTrans(int pageNumber, int pageSize, String sql) {
-		assertDialectNotNull();
-		return dialect.paginAndTrans(pageNumber, pageSize, sql);
-	}
-
-	/** Shortcut call to dialect.toCreateDDL method */
-	public String[] toCreateDDL(Class<?>... entityClasses) {
-		assertDialectNotNull();
-		return dialect.toCreateDDL(entityClasses);
-	}
-
-	/** Shortcut call to dialect.toDropDDL method */
-	public String[] toDropDDL(Class<?>... entityClasses) {
-		assertDialectNotNull();
-		return dialect.toDropDDL(entityClasses);
-	}
-
-	/** Shortcut call to dialect.toDropAndCreateDDL method */
-	public String[] toDropAndCreateDDL(Class<?>... entityClasses) {
-		assertDialectNotNull();
-		return dialect.toDropAndCreateDDL(entityClasses);
-	}
-
-	/** Shortcut call to dialect.toCreateDDL method */
-	public String[] toCreateDDL(TableModel... tables) {
-		assertDialectNotNull();
-		return dialect.toCreateDDL(tables);
-	}
-
-	/** Shortcut call to dialect.toDropDDL method */
-	public String[] toDropDDL(TableModel... tables) {
-		assertDialectNotNull();
-		return dialect.toDropDDL(tables);
-	}
-
-	/** Shortcut call to dialect.toDropAndCreateDDL method */
-	public String[] toDropAndCreateDDL(TableModel... tables) {
-		assertDialectNotNull();
-		return dialect.toDropAndCreateDDL(tables);
-	}
-
 	// =========== Explain SQL about methods========================
 	/**
 	 * Format SQL for logger output, subClass can override this method to customise
@@ -256,25 +214,159 @@ public class ImprovedQueryRunner extends QueryRunner {
 	/**
 	 * Add a explainer
 	 */
-	public static ArrayList<SqlInterceptor> getCurrentExplainers() {
-		return explainerSupportCache.get();
+	public static ArrayList<ResultSetHandler> getThreadedSqlInterceptors() {
+		return threadedSqlInterceptors.get();
 	}
 
 	/**
 	 * Explain SQL to add extra features like pagination...
 	 */
-	public String explainSql(String sql, int paramType, Object paramOrParams) {
+	private String explainSql(ResultSetHandler<?> rsh, String sql, Object... params) {
 		String newSQL = sql;
-		for (SqlInterceptor explainer : getCurrentExplainers())
-			newSQL = explainer.handleSql(this, newSQL, paramType, paramOrParams);
+		if (resultSetHandlers != null)
+			for (ResultSetHandler handler : resultSetHandlers) {
+				if (handler instanceof AroundSqlHandler)
+					newSQL = ((AroundSqlHandler) handler).handleSql(this, newSQL, params);
+			}
+
+		for (ResultSetHandler handler : getThreadedSqlInterceptors()) {
+			if (handler instanceof AroundSqlHandler)
+				newSQL = ((AroundSqlHandler) handler).handleSql(this, newSQL, params);
+		}
+
+		if (rsh != null && rsh instanceof AroundSqlHandler)
+			newSQL = ((AroundSqlHandler) rsh).handleSql(this, newSQL, params);
 		return newSQL;
 	}
 
-	public Object explainResult(Object result) {
+	private static String createKey(String sql, Object... params) {
+		return new StringBuilder("SQL:").append(sql).append("  Params:").append(Arrays.toString(params)).toString();
+	}
+
+	/**
+	 * Explain SQL to cached result object, if have
+	 */
+	private Object[] readCache(ResultSetHandler<?> rsh, String sql, Object... params) {
+		Object[] result = new Object[2];
+		String key = null;
+		if (resultSetHandlers != null)
+			for (ResultSetHandler handler : resultSetHandlers)
+				if (handler instanceof CacheSqlHandler) {
+					if (key == null)
+						key = createKey(sql, params);
+					result[0] = key;
+
+					Object value = ((CacheSqlHandler) handler).readFromCache(key);
+					if (value != null) {
+						result[1] = value;
+						return result;
+					}
+				}
+
+		for (ResultSetHandler handler : getThreadedSqlInterceptors())
+			if (handler instanceof CacheSqlHandler) {
+				if (key == null)
+					key = createKey(sql, params);
+				result[0] = key;
+
+				Object value = ((CacheSqlHandler) handler).readFromCache(key);
+				if (value != null) {
+					result[1] = value;
+					return result;
+				}
+			}
+
+		if (rsh != null && rsh instanceof CacheSqlHandler) {
+			if (key == null)
+				key = createKey(sql, params);
+			result[0] = key;
+
+			Object value = ((CacheSqlHandler) rsh).readFromCache(key);
+			if (value != null)
+				result[1] = value;
+		}
+		return result;
+	}
+
+	/**
+	 * Explain SQL to cached result object, if have
+	 */
+	private void writeToCache(ResultSetHandler<?> rsh, String key, Object value) {
+		if (key == null || key.length() == 0 || value == null)
+			return;
+		if (resultSetHandlers != null)
+			for (ResultSetHandler handler : resultSetHandlers)
+				if (handler instanceof CacheSqlHandler) {
+					((CacheSqlHandler) handler).writeToCache(key, value);
+					return;
+				}
+
+		for (ResultSetHandler handler : getThreadedSqlInterceptors())
+			if (handler instanceof CacheSqlHandler) {
+				((CacheSqlHandler) handler).writeToCache(key, value);
+				return;
+			}
+
+		if (rsh != null && rsh instanceof CacheSqlHandler)
+			((CacheSqlHandler) rsh).writeToCache(key, value);
+	}
+
+	/**
+	 * Handle the result set
+	 */
+	private Object explainResult(ResultSetHandler<?> rsh, Object result) {
 		Object newObj = result;
-		for (SqlInterceptor explainer : getCurrentExplainers())
-			newObj = explainer.handleResult(result);
+		if (rsh instanceof AroundSqlHandler)
+			newObj = ((AroundSqlHandler) rsh).handleResult(this, newObj);
+
+		if (resultSetHandlers != null)
+			for (ResultSetHandler explainer : resultSetHandlers) {
+				if (explainer instanceof AroundSqlHandler)
+					newObj = ((AroundSqlHandler) explainer).handleResult(this, newObj);
+			}
+		for (ResultSetHandler explainer : getThreadedSqlInterceptors())
+			if (explainer instanceof AroundSqlHandler)
+				newObj = ((AroundSqlHandler) explainer).handleResult(this, newObj);
+
 		return newObj;
+	}
+
+	// ===override execute/insert/update methods to support batch and explainSql
+	// BTW, some methods in QueryRunner are private, otherwise no need override
+	// so many methods
+
+	/**
+	 * Convert paramList to 2d array for insertBatch use, insertBatch's last
+	 * parameter is a 2d array, not easy to use
+	 */
+	protected static Object[][] listList2Arrays(List<List<?>> paramList) {
+		Object[][] array = new Object[paramList.size()][];
+		int i = 0;
+		for (List<?> item : paramList)
+			array[i++] = item.toArray(new Object[item.size()]);
+		return array;
+	}
+
+	/**
+	 * Add SQL to cache, if full (reach batchSize) then call batchFlush() <br/>
+	 * 
+	 * @throws SQLException
+	 * 
+	 */
+	private <T> T addToCacheIfFullFlush(String execteType, ResultSetHandler<T> rsh, Object param, String sql,
+			Connection conn, Object... params) throws SQLException {
+		Object[] forCache = new Object[] { execteType, rsh, param, sql, conn, params };
+		List<Object[]> cached = sqlBatchCache.get();
+		if (cached.size() >= this.batchSize)
+			this.batchFlush();
+		else if (!cached.isEmpty()) {
+			Object[] last = cached.get(cached.size() - 1);
+			if (!last[0].equals(forCache[0]) || !last[3].equals(forCache[3]) || (last[1] != forCache[1])
+					|| (last[4] != forCache[4]))
+				this.batchFlush();
+		}
+		sqlBatchCache.get().add(forCache);
+		return null;
 	}
 
 	// === Batch execute methods======
@@ -344,57 +436,6 @@ public class ImprovedQueryRunner extends QueryRunner {
 		this.batchEnabled.set(false);
 	}
 
-	/**
-	 * Force flush cached SQLs
-	 */
-	public void nBatchFlush() {
-		try {
-			batchFlush();
-		} catch (Exception e) {
-			throw new DbProRuntimeException(e);
-		}
-	}
-
-	/** Start batch sql */
-	public void nBatchBegin() {
-		try {
-			batchBegin();
-		} catch (Exception e) {
-			throw new DbProRuntimeException(e);
-		}
-	}
-
-	/** Stop batch sql */
-	public void nBatchEnd() {
-		try {
-			batchEnd();
-		} catch (Exception e) {
-			throw new DbProRuntimeException(e);
-		}
-	}
-
-	/**
-	 * Add SQL to cache, if full (reach batchSize) then call batchFlush() <br/>
-	 * 
-	 * @throws SQLException
-	 * 
-	 */
-	private <T> T addToCacheIfFullFlush(String execteType, ResultSetHandler<T> rsh, Object param, String sql,
-			Connection conn, Object... params) throws SQLException {
-		Object[] forCache = new Object[] { execteType, rsh, param, sql, conn, params };
-		List<Object[]> cached = sqlBatchCache.get();
-		if (cached.size() >= this.batchSize)
-			this.batchFlush();
-		else if (!cached.isEmpty()) {
-			Object[] last = cached.get(cached.size() - 1);
-			if (!last[0].equals(forCache[0]) || !last[3].equals(forCache[3]) || (last[1] != forCache[1])
-					|| (last[4] != forCache[4]))
-				this.batchFlush();
-		}
-		sqlBatchCache.get().add(forCache);
-		return null;
-	}
-
 	// ===override execute/insert/update methods to support batch and explainSql
 	// BTW, some methods in QueryRunner are private, otherwise no need override
 	// so many methods
@@ -402,16 +443,16 @@ public class ImprovedQueryRunner extends QueryRunner {
 	@Override
 	public int execute(Connection conn, String sql, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(null, sql, params);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("e1", null, null, explainedSql, conn, params);
 				return 0;
 			} else {
 				int result = super.execute(conn, explainedSql, params);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
@@ -419,329 +460,286 @@ public class ImprovedQueryRunner extends QueryRunner {
 	public <T> List<T> execute(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params)
 			throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(rsh, sql, params);
 			if (batchEnabled.get()) {
 				return (List<T>) addToCacheIfFullFlush("e2", rsh, null, explainedSql, conn, params);
 			} else {
 				List<T> result = super.execute(conn, explainedSql, rsh, params);
-				return (List<T>) explainResult(result);
+				result = (List<T>) explainResult(rsh, result);
+				return result;
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int execute(String sql, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(null, sql, params);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("e3", null, null, explainedSql, null, params);
 				return 0;
 			} else {
 				int result = super.execute(explainedSql, params);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> List<T> execute(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(rsh, sql, params);
 			if (batchEnabled.get())
 				return (List<T>) addToCacheIfFullFlush("e4", rsh, null, explainedSql, null, params);
 			List<T> result = super.execute(explainedSql, rsh, params);
-			return (List<T>) explainResult(result);
+			return (List<T>) explainResult(rsh, result);
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
+			String explainedSql = explainSql(rsh, sql, null);
 			if (batchEnabled.get())
 				return addToCacheIfFullFlush("i1", rsh, null, explainedSql, conn, null);
 			T result = super.insert(conn, explainedSql, rsh);
-			return (T) explainResult(result);
+			return (T) explainResult(rsh, result);
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T insert(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(rsh, sql, params);
 			if (batchEnabled.get())
 				return addToCacheIfFullFlush("i2", rsh, null, explainedSql, conn, params);
 			T result = super.insert(conn, explainedSql, rsh, params);
-			return (T) explainResult(result);
+			return (T) explainResult(rsh, result);
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
+			String explainedSql = explainSql(rsh, sql, null);
 			if (batchEnabled.get())
 				return addToCacheIfFullFlush("i3", rsh, null, explainedSql, null, null);
 			T result = super.insert(explainedSql, rsh);
-			return (T) explainResult(result);
+			return (T) explainResult(rsh, result);
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T insert(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(rsh, sql, params);
 			if (batchEnabled.get())
 				return addToCacheIfFullFlush("i4", rsh, null, explainedSql, null, params);
 			T result = super.insert(explainedSql, rsh, params);
-			return (T) explainResult(result);
+			return (T) explainResult(rsh, result);
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(Connection conn, String sql) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
+			String explainedSql = explainSql(null, sql, null);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u1", null, null, explainedSql, conn, null);
 				return 0;
 			} else {
 				int result = super.update(conn, explainedSql);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(Connection conn, String sql, Object param) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, SINGLE_PARAM, param);
+			String explainedSql = explainSql(null, sql, param);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u2", null, param, explainedSql, conn, null);
 				return 0;
 			} else {
 				int result = super.update(conn, explainedSql, param);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(Connection conn, String sql, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(null, sql, params);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u3", null, null, explainedSql, conn, params);
 				return 0;
 			} else {
 				int result = super.update(conn, explainedSql, params);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(String sql) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
+			String explainedSql = explainSql(null, sql, null);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u4", null, null, explainedSql, null, null);
 				return 0;
 			} else {
 				int result = super.update(explainedSql);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(String sql, Object param) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, SINGLE_PARAM, param);
+			String explainedSql = explainSql(null, sql, param);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u5", null, param, explainedSql, null, null);
 				return 0;
 			} else {
 				int result = super.update(explainedSql, param);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public int update(String sql, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(null, sql, params);
 			if (batchEnabled.get()) {
 				addToCacheIfFullFlush("u6", null, null, explainedSql, null, params);
 				return 0;
 			} else {
 				int result = super.update(explainedSql, params);
-				return (Integer) explainResult(result);
+				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
-	}
-
-	/**
-	 * Convert paramList to 2d array for insertBatch use, insertBatch's last
-	 * parameter is a 2d array, not easy to use
-	 */
-	private static Object[][] toArray(List<List<?>> paramList) {
-		Object[][] array = new Object[paramList.size()][];
-		int i = 0;
-		for (List<?> item : paramList)
-			array[i++] = item.toArray(new Object[item.size()]);
-		return array;
-	}
-
-	/**
-	 * Executes the given batch of INSERT SQL statements, connection is get from
-	 * current dataSource
-	 * 
-	 * @param sql
-	 *            The SQL statement to execute.
-	 * @param rsh
-	 *            The handler used to create the result object
-	 * @param paramList
-	 *            the parameters for all SQLs, list.get(0) is the first SQL's
-	 *            parameters
-	 * @return The result generated by the handler.
-	 * @throws SQLException
-	 *             if a database access error occurs
-	 */
-	public <T> T insertBatch(String sql, ResultSetHandler<T> rsh, List<List<?>> paramList) throws SQLException {
-		return insertBatch(sql, rsh, toArray(paramList));
-	}
-
-	/**
-	 * Executes the given batch of INSERT SQL statements
-	 * 
-	 * @param conn
-	 *            The connection
-	 * @param sql
-	 *            The SQL statement to execute.
-	 * @param rsh
-	 *            The handler used to create the result object
-	 * @param paramList
-	 *            the parameters for all SQLs, list.get(0) is the first SQL's
-	 *            parameters
-	 * @return The result generated by the handler.
-	 * @throws SQLException
-	 *             if a database access error occurs
-	 */
-	public <T> T insertBatch(Connection conn, String sql, ResultSetHandler<T> rsh, List<List<?>> paramList)
-			throws SQLException {
-		return this.insertBatch(conn, sql, rsh, toArray(paramList));
 	}
 
 	public <T> T query(Connection conn, String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
-			T result = super.query(conn, explainedSql, rsh, params);
-			return (T) explainResult(result);
+			String explainedSql = explainSql(rsh, sql, params);
+			Object[] cached = readCache(rsh, explainedSql, params);
+			if (cached != null && cached[1] != null)
+				return (T) cached[1];
+			Object result = super.query(conn, explainedSql, rsh, params);
+			if (cached != null)
+				writeToCache(rsh, (String) cached[0], result);
+			result = explainResult(rsh, result);
+			return (T) result;
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T query(Connection conn, String sql, ResultSetHandler<T> rsh) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
-			T result = super.query(conn, explainedSql, rsh);
-			return (T) explainResult(result);
+			String explainedSql = explainSql(rsh, sql, null);
+			Object[] cached = readCache(rsh, explainedSql, null);
+			if (cached != null && cached[1] != null)
+				return (T) cached[1];
+			Object result = super.query(conn, explainedSql, rsh);
+			if (cached != null)
+				writeToCache(rsh, (String) cached[0], result);
+			result = explainResult(rsh, result);
+			return (T) result;
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T query(String sql, ResultSetHandler<T> rsh, Object... params) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, ARRAY_PARAM, params);
+			String explainedSql = explainSql(rsh, sql, params);
+			Object[] cached = readCache(rsh, explainedSql, params);
+			if (cached != null && cached[1] != null)
+				return (T) cached[1];
 			T result = super.query(explainedSql, rsh, params);
-			return (T) explainResult(result);
+			if (cached != null)
+				writeToCache(rsh, (String) cached[0], result);
+			result = (T) explainResult(rsh, result);
+			return (T) result;
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
 	@Override
 	public <T> T query(String sql, ResultSetHandler<T> rsh) throws SQLException {
 		try {
-			String explainedSql = explainSql(sql, NO_PARAM, null);
-			T result = super.query(explainedSql, rsh);
-			return (T) explainResult(result);
+			String explainedSql = explainSql(rsh, sql, null);
+			Object[] cached = readCache(rsh, explainedSql, null);
+			if (cached != null && cached[1] != null)
+				return (T) cached[1];
+			Object result = super.query(explainedSql, rsh);
+			if (cached != null)
+				writeToCache(rsh, (String) cached[0], result);
+			result = explainResult(rsh, result);
+			return (T) result;
 		} finally {
-			getCurrentExplainers().clear();
+			getThreadedSqlInterceptors().clear();
 		}
 	}
 
-	// ==========getter & setter==========
-	public Boolean getAllowShowSQL() {
-		return allowShowSQL;
+	// ==========public static global methods============
+
+	public static Boolean getGlobalAllowShowSql() {
+		return globalAllowShowSql;
 	}
 
-	/**
-	 * Set if allow log output SQL and parameters, Note: this is not a thread-safe
-	 * method, should only call once at start of program
-	 */
-	public void setGlobalAllowShowSQL(Boolean allowShowSQL) {
-		this.allowShowSQL = allowShowSQL;
+	public static void setGlobalAllowShowSql(Boolean globalAllowShowSql) {
+		DbPro.globalAllowShowSql = globalAllowShowSql;
 	}
 
-	public Dialect getDialect() {
-		return dialect;
+	public static ConnectionManager getGlobalConnectionManager() {
+		return globalConnectionManager;
 	}
 
-	public DbProLogger getLogger() {
-		return logger;
+	public static void setGlobalConnectionManager(ConnectionManager globalConnectionManager) {
+		DbPro.globalConnectionManager = globalConnectionManager;
 	}
 
-	/**
-	 * Set the global logger, Note: this is not a thread-safe method, should only
-	 * call once at start of program
-	 */
-	public void setGlobalLogger(DbProLogger logger) {
-		this.logger = logger;
+	public static List<ResultSetHandler> getGlobalInterceptors() {
+		return globalResultSetHandlers;
 	}
 
-	public Integer getBatchSize() {
-		return batchSize;
+	public static void setGlobalResultSetHandlers(List<ResultSetHandler> globalResultSetHandlers) {
+		DbPro.globalResultSetHandlers = globalResultSetHandlers;
 	}
-
-	/**
-	 * Set the global batch size for batch operations, Note: this is not a
-	 * thread-safe method, should only call once at start of program
-	 */
-	public void setGlobalBatchSize(Integer batchSize) {
-		this.batchSize = batchSize;
-	}
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,10 +26,9 @@ import java.util.Set;
 import com.github.drinkjava2.jdbpro.inline.SqlAndParams;
 
 /**
- * BasicSqlTemplate is a simple implementation of SqlTemplateSupport. It
- * translate a SQL template and parameter Map into a SqlAndParams instance. Use
- * InlineSupport.setGlobalSqlTemplateEngine() method can set to use an other
- * global template engine if it implemented SqlTemplateSupport interface.
+ * BasicSqlTemplate is a simple implementation of SqlTemplateEngine. It allow
+ * use #{xxxx} format parameters in template, and replace ${xxxx} pieces
+ * directly
  * 
  * @author Yong Zhu
  * @since 1.7.0
@@ -63,9 +62,9 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	}
 
 	/**
-	 * Build a BasicSqlTemplate instance by given startDelimiter and
-	 * endDelimiter, startDelimiter should be 1 or 2 characters and endDelimiter
-	 * should be 1 character
+	 * Build a BasicSqlTemplate instance by given startDelimiter and endDelimiter,
+	 * startDelimiter should be 1 or 2 characters and endDelimiter should be 1
+	 * character
 	 * 
 	 * @param startDelimiter
 	 *            The start delimiter
@@ -192,7 +191,7 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 							directRep, key);
 					boolean hasValue = paramMap.containsKey(key);
 					if (!hasValue)
-						throwEX("No parameter found for '" + key + "' in template: " + template);
+						throwEX("No parameter found for '" + key + "' in template: " + template+". Current params="+paramMap);
 					if (directReplaceType) {
 						sql.append(paramMap.get(key));
 					} else {
@@ -282,14 +281,14 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 	// -----------------------------------------------------------------------
 	/**
 	 * <p>
-	 * Gets the substring before the first occurrence of a separator. The
-	 * separator is not returned.
+	 * Gets the substring before the first occurrence of a separator. The separator
+	 * is not returned.
 	 * </p>
 	 *
 	 * <p>
-	 * A {@code null} string input will return {@code null}. An empty ("")
-	 * string input will return the empty string. A {@code null} separator will
-	 * return the input string.
+	 * A {@code null} string input will return {@code null}. An empty ("") string
+	 * input will return the empty string. A {@code null} separator will return the
+	 * input string.
 	 * </p>
 	 *
 	 * <p>
@@ -330,14 +329,14 @@ public class BasicSqlTemplate implements SqlTemplateEngine {
 
 	/**
 	 * <p>
-	 * Gets the substring after the first occurrence of a separator. The
-	 * separator is not returned.
+	 * Gets the substring after the first occurrence of a separator. The separator
+	 * is not returned.
 	 * </p>
 	 *
 	 * <p>
-	 * A {@code null} string input will return {@code null}. An empty ("")
-	 * string input will return the empty string. A {@code null} separator will
-	 * return the empty string if the input string is not {@code null}.
+	 * A {@code null} string input will return {@code null}. An empty ("") string
+	 * input will return the empty string. A {@code null} separator will return the
+	 * empty string if the input string is not {@code null}.
 	 * </p>
 	 *
 	 * <p>

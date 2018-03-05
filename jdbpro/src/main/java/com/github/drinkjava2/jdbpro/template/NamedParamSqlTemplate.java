@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -21,10 +21,8 @@ import java.util.Set;
 import com.github.drinkjava2.jdbpro.inline.SqlAndParams;
 
 /**
- * BasicSqlTemplate is a simple implementation of SqlTemplateSupport. It
- * translate a SQL template and parameter Map into a SqlAndParams instance. Use
- * InlineSupport.setGlobalSqlTemplateEngine() method can set to use an other
- * global template engine if it implemented SqlTemplateSupport interface.
+ * NamedParamSqlTemplate is an implementation of SqlTemplateEngine. It allow use
+ * :xxxx or #{xxxx} format parameters in SQL template
  * 
  * @author Yong Zhu
  * @since 1.7.0

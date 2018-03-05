@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,9 @@ public interface SqlTemplateEngine {
 	 * Render a SQL Template String and a Map<String, Object> instance into a
 	 * {@link SqlAndParams} instance
 	 * 
-	 * @param sqlTemplate
-	 *            A SQL template String.
+	 * @param sqlTemplateOrSqlID
+	 *            A SQL Template String, or a SqlId used to locate the real SQL
+	 *            template String
 	 * @param paramMap
 	 *            A Map instance, key is String type, value is Object type
 	 * @param directReplaceNamesSet
@@ -45,18 +46,18 @@ public interface SqlTemplateEngine {
 	 *            For example: 
 	 *            Template "delete from ${tb}", use replace("tb","users") method,   will get "delete from users"
 	 *            Template "delete from #{tb}", use replace("tb","users") method,   will cause an Exception
-	 *            Template "delete from ${tb}", use bind("tb","users") method,      will cause an Exception
-	 *            Template "delete from #{tb}", use bind("tb","users") method,      will get "delete from ?"
+	 *            Template "delete from ${tb}", use put("tb","users") method,      will cause an Exception
+	 *            Template "delete from #{tb}", use put("tb","users") method,      will get "delete from ?"
 	 *            </pre>
 	 * 
 	 *            This design is to avoid typing mistake cause a SQL injection
-	 *            security leak, when programmer use replace() or replace0()
-	 *            method, he will aware this is a String direct replace method,
-	 *            not a SQL parameter, SQL parameter always use bind() or
-	 *            bind0() method.
+	 *            security leak, when programmer use replace() or replace0() method,
+	 *            he will aware this is a String direct replace method, not a SQL
+	 *            parameter, SQL parameter always use bind() or bind0() method.
 	 * 
 	 * @return SqlAndParams instance
 	 */
-	public SqlAndParams render(String sqlTemplate, Map<String, Object> paramMap, Set<String> directReplaceNamesSet);
- 
+	public SqlAndParams render(String sqlTemplateOrSqlID, Map<String, Object> paramMap,
+			Set<String> directReplaceNamesSet);
+
 }

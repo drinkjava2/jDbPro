@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016 Yong Zhu.
+/*
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,23 +13,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.github.drinkjava2.jdbpro;
-
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+package com.github.drinkjava2.jdbpro.handler;
 
 /**
- * Specifies a SQL on a method.
+ * CacheSqlHandler used to read
+ * 
+ * @since 1.7.0.2
  */
-@Target({ METHOD })
-@Retention(RUNTIME)
-
-public @interface SQL {
+@SuppressWarnings({ "all" })
+public interface CacheSqlHandler {
 	/**
-	 * (Optional) The value String of the SQL
+	 * Read value from cache
 	 */
-	String[] value() default {};
+	public Object readFromCache(String key);
+
+	/**
+	 * Write result to cache
+	 */
+	public void writeToCache(String key, Object value);
+
 }

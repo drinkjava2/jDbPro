@@ -36,7 +36,8 @@ import com.github.drinkjava2.jdbpro.template.NamedParamSqlTemplate;
  * query(String sql, Object... params):   Original DbUtils methods, need catch SQLException
  * nQuery(String sql, Object... params):  normal style, no need catch SQLException
  * iQuery(String... inlineSQLs):  In-line style
- * tQuery(String... sqlTemplate):  SQL Template style
+ * tQuery(String sqlTemplate, Map params):  SQL Template style
+ * xQuery(String... sqlTemplate):  In-line and Template mixed style style
  * </pre>
  * 
  * @author Yong Zhu
@@ -84,8 +85,8 @@ public class DbProUsageDemo {
 	@Test
 	public void executeTest() {
 		DataSource ds = (DataSource) BeanBox.getBean(DataSourceBox.class);
+		DbPro.setGlobalAllowShowSql(true);
 		DbPro dbPro = new DbPro(ds);
-		dbPro.setGlobalAllowShowSQL(true);
 		User user = new User();
 		user.setName("Sam");
 		user.setAddress("Canada");
@@ -147,42 +148,41 @@ public class DbProUsageDemo {
 		System.out.println("Example#6: tXxxx Template style methods use default BasicSqlTemplate engine ");
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("user", user);
-		dbPro.tExecute(params, "insert into users (name, address) values(#{user.name},#{user.address})");
+		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})", params);
 		params.clear();
 		params.put("name", "Sam");
 		params.put("addr", "Canada");
-		dbPro.tExecute(params, "update users set name=#{name}, address=#{addr}");
+		dbPro.tExecute("update users set name=#{name}, address=#{addr}", params);
 		Assert.assertEquals(1,
-				dbPro.tQueryForLongValue(params, "select count(*) from users where name=#{name} and address=#{addr}"));
+				dbPro.tQueryForLongValue("select count(*) from users where name=#{name} and address=#{addr}", params));
 		params.clear();
 		params.put("name", "Sam");
 		params.put("addr", "Canada");
-		dbPro.tExecute(params, "delete from users where name=#{name} or address=#{addr}");
+		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", params);
 
 		System.out.println("Example#7: tXxxx Template + Inline style ");
 		put0("user", user);
-		dbPro.tExecute("insert into users (name, address) values(#{user.name},#{user.address})");
+		dbPro.xExecute("insert into users (name, address) values(#{user.name},#{user.address})");
 		put0("name", "Sam");
 		put("addr", "Canada");
-		dbPro.tExecute("update users set name=#{name}, address=#{addr}");
+		dbPro.xExecute("update users set name=#{name}, address=#{addr}");
 		Assert.assertEquals(1,
-				dbPro.tQueryForLongValue("select count(*) from users where ${col}=#{name} and address=#{addr}",
+				dbPro.xQueryForLongValue("select count(*) from users where ${col}=#{name} and address=#{addr}",
 						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
-		dbPro.tExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
+		dbPro.xExecute("delete from users where name=#{name} or address=#{addr}", put0("name", "Sam"),
 				put("addr", "Canada"));
 
 		System.out.println("Example#8: tXxxx Template style but use 'NamedParamSqlTemplate' template engine");
 		dbPro = new DbPro(ds, NamedParamSqlTemplate.instance());
-		dbPro.setGlobalAllowShowSQL(true);
 		put0("user", user);
-		dbPro.tExecute("insert into users (name, address) values(:user.name, :user.address)");
+		dbPro.xExecute("insert into users (name, address) values(:user.name, :user.address)");
 		put0("name", "Sam");
 		put("addr", "Canada");
-		dbPro.tExecute("update users set name=:name, address=:addr");
+		dbPro.xExecute("update users set name=:name, address=:addr");
 		Assert.assertEquals(1,
-				dbPro.tQueryForLongValue("select count(*) from users where ${col}=:name and address=:addr",
+				dbPro.xQueryForLongValue("select count(*) from users where ${col}=:name and address=:addr",
 						put0("name", "Sam"), put("addr", "Canada"), replace("col", "name")));
-		dbPro.tExecute("delete from users where name=:name or address=:addr", put0("name", "Sam"),
+		dbPro.xExecute("delete from users where name=:name or address=:addr", put0("name", "Sam"),
 				put("addr", "Canada"));
 	}
 

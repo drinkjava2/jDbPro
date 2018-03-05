@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ public class SqlAndParams {
 	 */
 	private Object[] params;
 
+	private Class<?>[] handlerClasses;
+
 	public SqlAndParams() {
 		// default Constructor
 	}
@@ -58,8 +60,17 @@ public class SqlAndParams {
 		this.params = params;
 	}
 
+	public Class<?>[] getHandlerClasses() {
+		return handlerClasses;
+	}
+
+	public void setHandlerClasses(Class<?>[] handlerClasses) {
+		this.handlerClasses = handlerClasses;
+	}
+
 	public String getDebugInfo() {
 		return new StringBuffer("SQL: ").append(this.getSql()).append("\nParameters: ")
-				.append(Arrays.deepToString(this.getParams())).append("\n").toString();
+				.append(Arrays.deepToString(this.getParams())).append("\nHandler Class:")
+				.append(Arrays.deepToString(this.getHandlerClasses())).append("\n").toString();
 	}
 }

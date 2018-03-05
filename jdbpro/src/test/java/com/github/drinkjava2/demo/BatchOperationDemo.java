@@ -1,7 +1,10 @@
 package com.github.drinkjava2.demo;
 
-import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.*;
+import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline0;
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.valuesQuesions;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -68,9 +71,10 @@ public class BatchOperationDemo {
 
 	@Test
 	public void executeTest() {
-		long repeat = 10000L;
+		int repeat = 1000;
+		DbPro.setGlobalAllowShowSql(true);
 		DbPro dbPro = new DbPro((DataSource) BeanBox.getBean(DataSourceBox.class));
-		dbPro.setGlobalAllowShowSQL(false);
+
 		User user = new User();
 		user.setName("Sam");
 		user.setAddress("Canada");
@@ -99,7 +103,38 @@ public class BatchOperationDemo {
 		dbPro.nBatchEnd();
 		end = System.currentTimeMillis();
 		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
-		System.out.println(String.format("Batch execute " + repeat + " SQLs time used: %6s s", timeused));
+		System.out
+				.println(String.format("nBatchBegin/nBatchEnd execute " + repeat + " SQLs time used: %6s s", timeused));
+		Assert.assertEquals(repeat, dbPro.nQueryForLongValue("select count(*) from users"));
+
+		dbPro.nExecute("delete from users");
+		start = System.currentTimeMillis();
+		List<List<?>> params = new ArrayList<List<?>>();
+		for (long i = 0; i < repeat; i++) {
+			List<Object> oneRow = new ArrayList<Object>();
+			oneRow.add("Name" + i);
+			oneRow.add("Address" + i);
+			params.add(oneRow);
+		}
+		dbPro.nBatch("insert into users (name, address) values(?,?)", params);
+		end = System.currentTimeMillis();
+		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
+		System.out.println(
+				String.format("nBatch(Sql, List<List)) method execute " + repeat + " SQLs time used: %6s s", timeused));
+		Assert.assertEquals(repeat, dbPro.nQueryForLongValue("select count(*) from users"));
+
+		dbPro.nExecute("delete from users");
+		start = System.currentTimeMillis();
+		Object[][] paramsArray = new Object[repeat][2];
+		for (int i = 0; i < repeat; i++) {
+			paramsArray[i][0] = "Name" + i;
+			paramsArray[i][1] = "Address" + i;
+		}
+		dbPro.nBatch("insert into users (name, address) values(?,?)", paramsArray);
+		end = System.currentTimeMillis();
+		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
+		System.out.println(
+				String.format("nBatch(Sql, Object[][]) method execute " + repeat + " SQLs time used: %6s s", timeused));
 		Assert.assertEquals(repeat, dbPro.nQueryForLongValue("select count(*) from users"));
 	}
 

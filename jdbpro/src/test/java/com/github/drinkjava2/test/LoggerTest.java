@@ -9,8 +9,7 @@ package com.github.drinkjava2.test;
 
 import org.junit.Test;
 
-import com.github.drinkjava2.jdialects.Dialect;
-import com.github.drinkjava2.jdialects.DialectLogger;
+import com.github.drinkjava2.jdbpro.DbProLogger;
 
 /**
  * This is unit test for DDL
@@ -19,12 +18,10 @@ import com.github.drinkjava2.jdialects.DialectLogger;
  * @since 1.0.2
  */
 public class LoggerTest {
-	DialectLogger logger = DialectLogger.getLog(LoggerTest.class);
+	DbProLogger logger = DbProLogger.DefaultDbProLogger.getLog(LoggerTest.class);
 
 	@Test
 	public void doLoggerTest() {
-		Dialect.setAllowShowDialectLog(true);
-		Dialect.MySQL55Dialect.paginate(10, 10, "select * from sometable"); 
 		logger.info("Message output");
 		System.out.println("Message output");
 	}
