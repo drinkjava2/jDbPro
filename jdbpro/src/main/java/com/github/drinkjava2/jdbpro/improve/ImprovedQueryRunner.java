@@ -57,7 +57,7 @@ import com.github.drinkjava2.jtransactions.ConnectionManager;
 public class ImprovedQueryRunner extends QueryRunner {
 	protected static Boolean globalAllowShowSql = false;
 	protected static ConnectionManager globalConnectionManager = null;
-	protected static List<ResultSetHandler> globalResultSetHandlers = null;
+	protected static List<ResultSetHandler> globalHandlers = null;
 	protected static DbProLogger globalLogger = DefaultDbProLogger.getLog(ImprovedQueryRunner.class);
 	protected static Integer globalBatchSize = 100;
 	protected static SqlTemplateEngine globalTemplateEngine = NamedParamSqlTemplate.instance();
@@ -67,13 +67,13 @@ public class ImprovedQueryRunner extends QueryRunner {
 	protected Boolean allowShowSQL = globalAllowShowSql;
 	protected DbProLogger logger = globalLogger;
 	protected Integer batchSize = globalBatchSize;
-	protected List<ResultSetHandler> resultSetHandlers = globalResultSetHandlers;
+	protected List<ResultSetHandler> handlers = globalHandlers;
 
 	/**
-	 * A ThreadLocal type cache to store AroundSqlHandler instances, all instance
-	 * will be cleaned after this thread close
+	 * A ThreadLocal type cache to store handlers, all handlers will be cleaned
+	 * after any SQL method be executed
 	 */
-	private static ThreadLocal<ArrayList<ResultSetHandler>> threadedSqlInterceptors = new ThreadLocal<ArrayList<ResultSetHandler>>() {
+	private static ThreadLocal<ArrayList<ResultSetHandler>> threadedHandlers = new ThreadLocal<ArrayList<ResultSetHandler>>() {
 		@Override
 		protected ArrayList<ResultSetHandler> initialValue() {
 			return new ArrayList<ResultSetHandler>();
@@ -214,8 +214,8 @@ public class ImprovedQueryRunner extends QueryRunner {
 	/**
 	 * Add a explainer
 	 */
-	public static ArrayList<ResultSetHandler> getThreadedSqlInterceptors() {
-		return threadedSqlInterceptors.get();
+	public static ArrayList<ResultSetHandler> getThreadedHandlers() {
+		return threadedHandlers.get();
 	}
 
 	/**
@@ -223,13 +223,13 @@ public class ImprovedQueryRunner extends QueryRunner {
 	 */
 	private String explainSql(ResultSetHandler<?> rsh, String sql, Object... params) {
 		String newSQL = sql;
-		if (resultSetHandlers != null)
-			for (ResultSetHandler handler : resultSetHandlers) {
+		if (handlers != null)
+			for (ResultSetHandler handler : handlers) {
 				if (handler instanceof AroundSqlHandler)
 					newSQL = ((AroundSqlHandler) handler).handleSql(this, newSQL, params);
 			}
 
-		for (ResultSetHandler handler : getThreadedSqlInterceptors()) {
+		for (ResultSetHandler handler : getThreadedHandlers()) {
 			if (handler instanceof AroundSqlHandler)
 				newSQL = ((AroundSqlHandler) handler).handleSql(this, newSQL, params);
 		}
@@ -249,8 +249,8 @@ public class ImprovedQueryRunner extends QueryRunner {
 	private Object[] readCache(ResultSetHandler<?> rsh, String sql, Object... params) {
 		Object[] result = new Object[2];
 		String key = null;
-		if (resultSetHandlers != null)
-			for (ResultSetHandler handler : resultSetHandlers)
+		if (handlers != null)
+			for (ResultSetHandler handler : handlers)
 				if (handler instanceof CacheSqlHandler) {
 					if (key == null)
 						key = createKey(sql, params);
@@ -263,7 +263,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 					}
 				}
 
-		for (ResultSetHandler handler : getThreadedSqlInterceptors())
+		for (ResultSetHandler handler : getThreadedHandlers())
 			if (handler instanceof CacheSqlHandler) {
 				if (key == null)
 					key = createKey(sql, params);
@@ -294,14 +294,14 @@ public class ImprovedQueryRunner extends QueryRunner {
 	private void writeToCache(ResultSetHandler<?> rsh, String key, Object value) {
 		if (key == null || key.length() == 0 || value == null)
 			return;
-		if (resultSetHandlers != null)
-			for (ResultSetHandler handler : resultSetHandlers)
+		if (handlers != null)
+			for (ResultSetHandler handler : handlers)
 				if (handler instanceof CacheSqlHandler) {
 					((CacheSqlHandler) handler).writeToCache(key, value);
 					return;
 				}
 
-		for (ResultSetHandler handler : getThreadedSqlInterceptors())
+		for (ResultSetHandler handler : getThreadedHandlers())
 			if (handler instanceof CacheSqlHandler) {
 				((CacheSqlHandler) handler).writeToCache(key, value);
 				return;
@@ -319,12 +319,12 @@ public class ImprovedQueryRunner extends QueryRunner {
 		if (rsh instanceof AroundSqlHandler)
 			newObj = ((AroundSqlHandler) rsh).handleResult(this, newObj);
 
-		if (resultSetHandlers != null)
-			for (ResultSetHandler explainer : resultSetHandlers) {
+		if (handlers != null)
+			for (ResultSetHandler explainer : handlers) {
 				if (explainer instanceof AroundSqlHandler)
 					newObj = ((AroundSqlHandler) explainer).handleResult(this, newObj);
 			}
-		for (ResultSetHandler explainer : getThreadedSqlInterceptors())
+		for (ResultSetHandler explainer : getThreadedHandlers())
 			if (explainer instanceof AroundSqlHandler)
 				newObj = ((AroundSqlHandler) explainer).handleResult(this, newObj);
 
@@ -452,7 +452,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -469,7 +469,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return result;
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -485,7 +485,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -498,7 +498,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			List<T> result = super.execute(explainedSql, rsh, params);
 			return (List<T>) explainResult(rsh, result);
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -511,7 +511,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			T result = super.insert(conn, explainedSql, rsh);
 			return (T) explainResult(rsh, result);
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -524,7 +524,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			T result = super.insert(conn, explainedSql, rsh, params);
 			return (T) explainResult(rsh, result);
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -537,7 +537,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			T result = super.insert(explainedSql, rsh);
 			return (T) explainResult(rsh, result);
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -550,7 +550,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			T result = super.insert(explainedSql, rsh, params);
 			return (T) explainResult(rsh, result);
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -566,7 +566,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -582,7 +582,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -598,7 +598,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -614,7 +614,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -630,7 +630,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -646,7 +646,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 				return (Integer) explainResult(null, result);
 			}
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -662,7 +662,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			result = explainResult(rsh, result);
 			return (T) result;
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -679,7 +679,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			result = explainResult(rsh, result);
 			return (T) result;
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -696,7 +696,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			result = (T) explainResult(rsh, result);
 			return (T) result;
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -713,7 +713,7 @@ public class ImprovedQueryRunner extends QueryRunner {
 			result = explainResult(rsh, result);
 			return (T) result;
 		} finally {
-			getThreadedSqlInterceptors().clear();
+			getThreadedHandlers().clear();
 		}
 	}
 
@@ -735,11 +735,11 @@ public class ImprovedQueryRunner extends QueryRunner {
 		DbPro.globalConnectionManager = globalConnectionManager;
 	}
 
-	public static List<ResultSetHandler> getGlobalInterceptors() {
-		return globalResultSetHandlers;
+	public static List<ResultSetHandler> getGlobalHandlers() {
+		return globalHandlers;
 	}
 
-	public static void setGlobalResultSetHandlers(List<ResultSetHandler> globalResultSetHandlers) {
-		DbPro.globalResultSetHandlers = globalResultSetHandlers;
+	public static void setGlobalResultSetHandlers(List<ResultSetHandler> globalHandlers) {
+		DbPro.globalHandlers = globalHandlers;
 	}
 }

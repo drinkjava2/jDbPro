@@ -17,18 +17,10 @@ Add below in pom.xml:
    <dependency>  
       <groupId>com.github.drinkjava2</groupId>  
       <artifactId>jdbpro</artifactId>  
-      <version>1.7.0</version>  (will release soon becasue just changed project name)
+      <version>1.7.0.2</version>  <!-- Or latest release -->
    </dependency>
 ``` 
-jDbPro1.7.0 only depends on DbUtils, if use Maven will automatically download commons-dbutils-1.7.jar  
-If want jDbPro work with transactions services, also need add below dependency for jTransactions, jTransactions is a seperated transaction services tool:  
-```
-    <dependency>
-      <groupId>com.github.drinkjava2</groupId>
-      <artifactId>jtransactions</artifactId>
-      <version>1.0.0</version>
-    </dependency>
-```	
+jDbPro depends on DbUtils, if use Maven will automatically download commons-dbutils-1.7.jar   
 
 ### Introduce   
 1. jDbPro mixed use normal style, In-line style and template style demo, default if no transaction service configurated, jDbPro works on auto-commit mode.  

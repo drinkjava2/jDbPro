@@ -3,6 +3,7 @@ package com.github.drinkjava2.demo;
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.inline0;
 import static com.github.drinkjava2.jdbpro.inline.InlineQueryRunner.valuesQuesions;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,7 +131,11 @@ public class BatchOperationDemo {
 			paramsArray[i][0] = "Name" + i;
 			paramsArray[i][1] = "Address" + i;
 		}
-		dbPro.nBatch("insert into users (name, address) values(?,?)", paramsArray);
+		try {
+			dbPro.batch("insert into users (name, address) values(?,?)", paramsArray);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		end = System.currentTimeMillis();
 		timeused = "" + (end - start) / 1000 + "." + (end - start) % 1000;
 		System.out.println(
