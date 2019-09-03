@@ -14,11 +14,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.github.drinkjava2.jtransactions.tinytx;
+package com.github.drinkjava2.jtransactions.grouptx;
 
 import java.sql.Connection;
-
-import javax.sql.DataSource;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -26,37 +24,29 @@ import org.aopalliance.intercept.MethodInvocation;
 import com.github.drinkjava2.jtransactions.TransactionsException;
 
 /**
- * The TinyTx AOP MethodInterceptor
+ * A Group Transaction AOP MethodInterceptor
  * 
  * @author Yong Zhu
- * @since 1.0.0
- * @deprecated use TinyTxAOP class replace
+ * @since 2.0.7
+ * @deprecated use GroupTxAOP replace
  */
 @Deprecated
-public class TinyTx implements MethodInterceptor {// NOSONAR
-	private TinyTxConnectionManager cm = TinyTxConnectionManager.instance();
+public class GroupTx implements MethodInterceptor {
+	private GroupTxConnectionManager cm = GroupTxConnectionManager.instance();
 
 	private int transactionIsolation = Connection.TRANSACTION_READ_COMMITTED;
 
-	public TinyTx() {
+	public GroupTx() {
 	}
 
-	public TinyTx(Integer transactionIsolation) {
+	public GroupTx(Integer transactionIsolation) {
 		this.transactionIsolation = transactionIsolation;
 	}
 
-	public TinyTx(TinyTxConnectionManager cm, Integer transactionIsolation) {
+	public GroupTx(GroupTxConnectionManager cm, Integer transactionIsolation) {
 		this.cm = cm;
 		this.transactionIsolation = transactionIsolation;
 	}
-	
-	public TinyTx(DataSource ds) { 
-	}
-
-	public TinyTx(DataSource ds, Integer transactionIsolation) { 
-		this.transactionIsolation = transactionIsolation;
-	}
-
 
 	@Override
 	public Object invoke(MethodInvocation caller) throws Throwable {// NOSONAR
@@ -70,7 +60,7 @@ public class TinyTx implements MethodInterceptor {// NOSONAR
 				cm.commitTransaction();
 			} catch (Throwable t) {
 				cm.rollbackTransaction();
-				throw new TransactionsException("TinyTx found a runtime Exception, transaction rollbacked.", t);
+				throw new TransactionsException("GroupTx found a runtime Exception, transaction rollbacked.", t);
 			}
 			return invokeResult;
 		}

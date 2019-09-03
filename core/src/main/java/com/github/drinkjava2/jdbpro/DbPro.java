@@ -52,34 +52,6 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 		super(ds);
 	}
 
-	public DbPro(DbProConfig config) {
-		super();
-		this.connectionManager = config.getConnectionManager();
-		this.sqlTemplateEngine = config.getTemplateEngine();
-		this.allowShowSQL = config.getAllowSqlSql();
-		this.logger = config.getLogger();
-		this.batchSize = config.getBatchSize();
-		this.sqlHandlers = config.getSqlHandlers();
-		this.iocTool = config.getIocTool();
-		this.slaves = config.getSlaves();
-		this.masters = config.getMasters();
-		this.masterSlaveOption = config.getMasterSlaveSelect();
-	}
-
-	public DbPro(DataSource ds, DbProConfig config) {
-		super(ds);
-		this.connectionManager = config.getConnectionManager();
-		this.sqlTemplateEngine = config.getTemplateEngine();
-		this.allowShowSQL = config.getAllowSqlSql();
-		this.logger = config.getLogger();
-		this.batchSize = config.getBatchSize();
-		this.sqlHandlers = config.getSqlHandlers();
-		this.iocTool = config.getIocTool();
-		this.slaves = config.getSlaves();
-		this.masters = config.getMasters();
-		this.masterSlaveOption = config.getMasterSlaveSelect();
-	}
-
 	/**
 	 * Quite execute a SQL, do not throw any exception, if any exception happen,
 	 * return -1
@@ -114,7 +86,7 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	}
 
 	/**
-	 * Prepare a PreparedSQL for iXxxx (In-line) style or pXxxx style, For iXxxx
+	 * Prepare a PreparedSQL for iXxxx (In-line) style or pXxxx style, For in-line
 	 * style, unknown items be treated as String, SQL parameters must written in
 	 * param() method, for example:
 	 * 
@@ -136,8 +108,8 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 *            or instance / SqlHandler class or instance
 	 * @return a PreparedSQL instance
 	 */
-	private PreparedSQL doPrepare(boolean iXxxStyle, Object... items) {// NOSONAR
-		PreparedSQL ps = dealSqlItems(null, iXxxStyle, items);
+	private PreparedSQL doPrepare(boolean inlineStyle, Object... items) {// NOSONAR
+		PreparedSQL ps = dealSqlItems(null, inlineStyle, items);
 		ps.addGlobalAndThreadedHandlers(this);
 		return ps;
 	}
@@ -145,30 +117,29 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	/**
 	 * Deal with multiple SqlItems
 	 */
-	public PreparedSQL dealSqlItems(PreparedSQL lastPreSql, boolean iXxxStyle, Object... items) {// NOSONAR
+	public PreparedSQL dealSqlItems(PreparedSQL lastPreSql, boolean inlineStyle, Object... items) {// NOSONAR
 		if (items == null || items.length == 0)
-			throw new DbProRuntimeException("prepareSQL items can not be empty");
+			throw new DbProException("prepareSQL items can not be empty");
 		PreparedSQL predSQL = lastPreSql;
 		if (predSQL == null)
 			predSQL = new PreparedSQL();
 		for (Object item : items) {
 			if (item == null) {
-				if (iXxxStyle)
-					throw new DbProRuntimeException("In iXxxx style,  null value can not append as SQL piece");
+				if (inlineStyle)
+					throw new DbProException("In in-line style,  null value can not append as SQL piece");
 				else
 					predSQL.addParam(null);
-			} else if (!dealOneSqlItem(iXxxStyle, predSQL, item)) {
+			} else if (!dealOneSqlItem(inlineStyle, predSQL, item)) {
 				if (item instanceof SqlItem)
-					throw new DbProRuntimeException(
-							"One SqlItem did not find explainer, type=" + ((SqlItem) item).getType());
+					throw new DbProException("One SqlItem did not find explainer, type=" + ((SqlItem) item).getType());
 				if (item.getClass().isArray()) {
 					Object[] array = (Object[]) item;
 					if (array.length != 0)
-						dealSqlItems(predSQL, iXxxStyle, (Object[]) item);
-				} else if (iXxxStyle)
-					predSQL.addSql(item); // iXxxx style, unknown is SQL piece
+						dealSqlItems(predSQL, inlineStyle, (Object[]) item);
+				} else if (inlineStyle)
+					predSQL.addSql(item); // iXxxx style, unknown object look as SQL piece
 				else
-					predSQL.addParam(item); // pXxxx style, unknown is parameter
+					predSQL.addParam(item); // pXxxx style, unknown object look as parameter
 			}
 		}
 		predSQL.setSql(predSQL.getSqlBuilder().toString());
@@ -179,14 +150,9 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 * Here deal one SqlItem, if can deal it, return true, otherwise return false,
 	 * subclass (like SqlBoxContext) can override this method
 	 */
-	protected boolean dealOneSqlItem(boolean iXxxStyle, PreparedSQL predSQL, Object item) {// NOSONAR
+	protected boolean dealOneSqlItem(boolean inlineStyle, PreparedSQL predSQL, Object item) {// NOSONAR
 		if (item instanceof String) {
-			if (iXxxStyle)
-				predSQL.addSql(item);
-			else if (predSQL.getSqlBuilder().length() > 0)
-				predSQL.addParam(item);
-			else
-				predSQL.addSql(item);
+			predSQL.addSqlOrParam(inlineStyle, (String) item);
 		} else if (item instanceof PreparedSQL) {
 			PreparedSQL psItem = (PreparedSQL) item;
 			if (psItem.getSql() != null)
@@ -244,7 +210,7 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 			} else if (SqlOption.NOT_NULL.equals(sqlItemType)) {
 				Object[] args = sqItem.getParameters();
 				if (args.length < 2)
-					throw new DbProRuntimeException("NOT_NULL type SqlItem need at least 2 args");
+					throw new DbProException("NOT_NULL type SqlItem need at least 2 args");
 				if (args[args.length - 1] != null) {
 					for (int i = 0; i < args.length - 1; i++)
 						dealOneSqlItem(true, predSQL, args[i]);// in NOT_NULL type, force use i style
@@ -264,17 +230,11 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 				predSQL.disableHandlers((Object[]) sqItem.getParameters());
 			} else if (SqlOption.SWITCHTO.equals(sqlItemType)) {
 				predSQL.setSwitchTo((DbPro) sqItem.getParameters()[0]);
-			} else if (SqlOption.IOC.equals(sqlItemType)) {
-				if (this.getIocTool() == null)
-					throw new DbProRuntimeException(
-							"A IocTool setting required to deal an @Ioc or ioc() method, please read user manual.");
-				for (Object claz : sqItem.getParameters()) {
-					Object obj = this.getIocTool().getBean((Class) claz);
-					dealSqlItems(predSQL, iXxxStyle, obj);
-				}
 			} else
 				return false;
-		} else if (item instanceof Connection)
+		} else if (item instanceof Text)
+			predSQL.addSql(item.toString());
+		else if (item instanceof Connection)
 			predSQL.setConnection((Connection) item);
 		else if (item instanceof DbPro)
 			predSQL.setSwitchTo((DbPro) item);
@@ -282,10 +242,14 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 			predSQL.addHandler((SqlHandler) item);
 		else if (item instanceof ResultSetHandler)
 			predSQL.setResultSetHandler((ResultSetHandler) item);
-		else if (item instanceof Class)
-			// Class type will treated as TableModel in jSQLBOX, but not at jDbPro
-			return false;
-		else if (item instanceof CustomizedSqlItem) {
+		else if (item instanceof Class) {
+			if (Text.class.isAssignableFrom((Class) item)) {
+				String text = Text.classToString((Class) item);
+				predSQL.addSqlOrParam(inlineStyle, text);
+				return true;
+			} else
+				return false;
+		} else if (item instanceof CustomizedSqlItem) {
 			((CustomizedSqlItem) item).doPrepare(predSQL);
 		} else
 			return false;
@@ -334,6 +298,14 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 */
 	public long iQueryForLongValue(Object... inlineSQL) {
 		return ((Number) iQueryForObject(inlineSQL)).longValue();// NOSONAR
+	}
+
+	/**
+	 * In-line style execute query and force return a int, runtime exception may
+	 * throw if result can not be cast to int.
+	 */
+	public int iQueryForIntValue(Object... inlineSQL) {
+		return ((Number) iQueryForObject(inlineSQL)).intValue();// NOSONAR
 	}
 
 	/**
@@ -435,10 +407,19 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	}
 
 	/**
+	 * pXxxx style execute query and force return a int, runtime exception may throw
+	 * if result can not be cast to int.
+	 */
+	public int pQueryForIntValue(Object... items) {
+		return ((Number) pQueryForObject(items)).intValue();// NOSONAR
+	}
+
+	/**
 	 * pXxxx style execute query and force return a String object.
 	 */
 	public String pQueryForString(Object... items) {
-		return String.valueOf(pQueryForObject(items));
+		Object o = pQueryForObject(items);
+		return String.valueOf(o);
 	}
 
 	/**
@@ -532,6 +513,14 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 */
 	public long tQueryForLongValue(Object... items) {
 		return ((Number) tQueryForObject(items)).longValue();// NOSONAR
+	}
+
+	/**
+	 * pXxxx style execute query and force return a int value, runtime exception may
+	 * throw if result can not be cast to int.
+	 */
+	public int tQueryForIntValue(Object... items) {
+		return ((Number) tQueryForObject(items)).intValue();// NOSONAR
 	}
 
 	/**
@@ -650,11 +639,19 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	}
 
 	/**
-	 * Execute query and force return a Long object, no need catch SQLException,
+	 * Execute query and force return a long value, no need catch SQLException,
 	 * runtime exception may throw if result can not be cast to long.
 	 */
 	public long nQueryForLongValue(Connection conn, String sql, Object... params) {
 		return ((Number) nQueryForObject(conn, sql, params)).longValue();// NOSONAR
+	}
+
+	/**
+	 * Execute query and force return a int, no need catch SQLException, runtime
+	 * exception may throw if result can not be cast to int.
+	 */
+	public int nQueryForIntValue(Connection conn, String sql, Object... params) {
+		return ((Number) nQueryForObject(conn, sql, params)).intValue();// NOSONAR
 	}
 
 	/**
@@ -795,11 +792,19 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	}
 
 	/**
-	 * Execute query and force return a Long object, no need catch SQLException,
+	 * Execute query and force return a long value, no need catch SQLException,
 	 * runtime exception may throw if result can not be cast to long
 	 */
 	public long nQueryForLongValue(String sql, Object... params) {
 		return ((Number) nQueryForObject(sql, params)).longValue();// NOSONAR
+	}
+
+	/**
+	 * Execute query and force return a int value, no need catch SQLException,
+	 * runtime exception may throw if result can not be cast to int
+	 */
+	public int nQueryForIntValue(String sql, Object... params) {
+		return ((Number) nQueryForObject(sql, params)).intValue();// NOSONAR
 	}
 
 	/**

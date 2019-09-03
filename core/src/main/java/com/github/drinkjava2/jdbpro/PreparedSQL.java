@@ -170,11 +170,11 @@ public class PreparedSQL {
 		if (givesList == null)
 			givesList = new ArrayList<String[]>();
 		if (gives == null || gives.length < 2)
-			throw new DbProRuntimeException("addGives at least need 2 alias parameters");
+			throw new DbProException("addGives at least need 2 alias parameters");
 		givesList.add(gives);
 	}
-	
-	public void giveBoth(String  alias1, String alias2) {  
+
+	public void giveBoth(String alias1, String alias2) {
 		if (givesList == null)
 			givesList = new ArrayList<String[]>();
 		givesList.add(new String[] { alias1, alias2 });
@@ -196,7 +196,7 @@ public class PreparedSQL {
 
 	public void addTemplateParam(SqlItem sp) {
 		if (sp.getParameters() == null || ((sp.getParameters().length % 2) != 0))
-			throw new DbProRuntimeException(
+			throw new DbProException(
 					"Put type template parameter should be key1, value1, key2,value2... format");
 		if (templateParamMap == null)
 			templateParamMap = new HashMap<String, Object>();
@@ -218,7 +218,7 @@ public class PreparedSQL {
 
 	public void disableHandlers(Object[] handlersClass) {
 		if (handlersClass == null || handlersClass.length == 0)
-			throw new DbProRuntimeException("disableHandlers method need at least 1 parameter");
+			throw new DbProException("disableHandlers method need at least 1 parameter");
 		if (disabledHandlers == null)
 			disabledHandlers = new ArrayList<Class<?>>();
 		for (Object obj : handlersClass)
@@ -246,7 +246,7 @@ public class PreparedSQL {
 
 	public void setResultSetHandler(ResultSetHandler<?> rsh) {
 		if (this.resultSetHandler != null)
-			throw new DbProRuntimeException(
+			throw new DbProException(
 					"ResultSetHandler already exist and can only set 1, need use changeResultSetHandler method.");
 		this.resultSetHandler = rsh;
 	}
@@ -265,16 +265,16 @@ public class PreparedSQL {
 
 	public void addNoParamHandlerByClass(Class handlerClass) {
 		if (handlerClass == null)
-			throw new DbProRuntimeException("HandlerClass can not be null");
+			throw new DbProException("HandlerClass can not be null");
 		try {
 			if (ResultSetHandler.class.isAssignableFrom(handlerClass))
 				setResultSetHandler((ResultSetHandler) handlerClass.newInstance());
 			else if (SqlHandler.class.isAssignableFrom(handlerClass))
 				addSqlHandler((SqlHandler) handlerClass.newInstance());
 			else
-				throw new DbProRuntimeException("ResultSetHandler class or SqlHandler class required");
+				throw new DbProException("ResultSetHandler class or SqlHandler class required");
 		} catch (Exception e) {
-			throw new DbProRuntimeException(e);
+			throw new DbProException(e);
 		}
 	}
 
@@ -314,6 +314,16 @@ public class PreparedSQL {
 		if (others == null)
 			others = new ArrayList<SqlItem>();
 		others.add(obj);
+	}
+
+	/** if InlineStyle=true or SQL is empty, add as SQL, else add as parameter */
+	public void addSqlOrParam(boolean inlineStyle, String item) {
+		if (inlineStyle)
+			addSql(item);
+		else if (getSqlBuilder().length() > 0)
+			addParam(item);
+		else
+			addSql(item);
 	}
 
 	protected void GetterSetters_________________________() {// NOSONAR

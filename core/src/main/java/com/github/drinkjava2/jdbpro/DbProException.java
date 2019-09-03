@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Yong Zhu.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,36 +13,38 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.github.drinkjava2.jtransactions.tinytx;
+package com.github.drinkjava2.jdbpro;
 
 /**
- * This TinyTxRuntimeException used to wrap exception to a Runtime type
- * Exception
- * 
+ * This DbProException only used to wrap a SQLException to a Runtime type
+ * Exception to avoid each time to catch annoying SQLException. Usually used
+ * together with an IOC/AOP tool like Spring, it will catch runtime Exception
+ * and roll back transaction.
+ *
  * @author Yong Zhu
- * @since 1.0.0
+ * @since 1.7.0
  */
-public class TinyTxRuntimeException extends RuntimeException {
+public class DbProException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 
-	public TinyTxRuntimeException() {
+	public DbProException() {
 		super();
 	}
 
-	public TinyTxRuntimeException(Throwable cause) {
+	public DbProException(Throwable cause) {
 		super(cause);
 	}
 
-	public TinyTxRuntimeException(String msg) {
+	public DbProException(String msg) {
 		super(msg);
 	}
 
-	public TinyTxRuntimeException(String msg, Throwable cause) {
+	public DbProException(String msg, Throwable cause) {
 		super(msg, cause);
 	}
 
 	public static void assertNotNull(Object object, String msg) {
 		if (object == null)
-			throw new TinyTxRuntimeException(msg);
+			throw new DbProException(msg);
 	}
 }

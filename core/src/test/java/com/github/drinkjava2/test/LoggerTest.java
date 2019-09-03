@@ -5,7 +5,8 @@ package com.github.drinkjava2.test;
 
 import org.junit.Test;
 
-import com.github.drinkjava2.jdbpro.DbProLogger;
+import com.github.drinkjava2.jdbpro.log.DbProLog;
+import com.github.drinkjava2.jdbpro.log.DbProLogFactory;
 
 /**
  * This is unit test for DDL
@@ -14,7 +15,7 @@ import com.github.drinkjava2.jdbpro.DbProLogger;
  * @since 1.0.2
  */
 public class LoggerTest {
-	DbProLogger logger = DbProLogger.DefaultDbProLogger.getLog(LoggerTest.class);
+	DbProLog logger = DbProLogFactory.getLog(LoggerTest.class);
 
 	@Test
 	public void doLoggerTest() {
