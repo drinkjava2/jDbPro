@@ -55,7 +55,7 @@ public enum SqlOption {
 	// ----------Special Items ------------
 	/**
 	 * Mark a ENABLE_HANDLERS SqlOption, switch to another DbPro or subClass
-	 * (SqlBoxContext) to execute SQL
+	 * (DbContext) to execute SQL
 	 */
 	SWITCHTO,
 

@@ -148,7 +148,7 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 
 	/**
 	 * Here deal one SqlItem, if can deal it, return true, otherwise return false,
-	 * subclass (like SqlBoxContext) can override this method
+	 * subclass (like DbContext) can override this method
 	 */
 	protected boolean dealOneSqlItem(boolean inlineStyle, PreparedSQL predSQL, Object item) {// NOSONAR
 		if (item instanceof String) {
@@ -312,7 +312,8 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 * In-line style execute query and force return a String object.
 	 */
 	public String iQueryForString(Object... inlineSQL) {
-		return String.valueOf(iQueryForObject(inlineSQL));
+		Object result = iQueryForObject(inlineSQL);
+		return result == null ? null : result.toString();
 	}
 
 	/**
@@ -788,7 +789,7 @@ public class DbPro extends ImprovedQueryRunner implements NormalJdbcTool {// NOS
 	 * Execute query and force return a String object, no need catch SQLException
 	 */
 	public String nQueryForString(String sql, Object... params) {
-		return String.valueOf(nQueryForObject(sql, params));
+		return String.valueOf((Object) nQueryForObject(sql, params));
 	}
 
 	/**

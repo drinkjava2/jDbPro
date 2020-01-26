@@ -17,15 +17,15 @@ jDbPro是一个建立于Apache Commons DbUtils上，并对其增强了动态SQL�
    <dependency>  
       <groupId>com.github.drinkjava2</groupId>  
       <artifactId>jdbpro</artifactId>  
-      <version>3.0.0</version> <!--或Maven最新版-->
+      <version>4.0</version> <!--或Maven最新版-->
    </dependency>
 ``` 
 jDbPro依赖于DbUtils, 如果使用Maven还将会自动下载DbUtils包commons-dbutils-1.7.jar。   
 
 ### 说明 
-从2.0.2版本起，jDbPro即不再有自已的说明文档，因为它的功能已在jSqlBox中的用户手册中有比较详细的介绍，其中n、i、p、t、INLINE系列方法皆为jSqlBox从DbPro中继承过去的。
+DbPro没有自已的说明文档，因为它的功能已在jSqlBox中的用户手册中有比较详细的介绍，其中n、i、p、t、INLINE系列方法皆为jSqlBox从DbPro中继承过去的。
 以下两行是个简短的示例，更多使用方式请参见jSqlBox的用户手册。
 ```
 DbPro dbPro = new DbPro(someDataSource);  
-dbPro.nExecute("update users set name=?, address=?", "Sam", "Canada");
+dbPro.nExecute("update users set name=?, " , param("Sam"), "address=?", param("Canada"));
 ```

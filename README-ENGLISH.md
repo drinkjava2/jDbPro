@@ -17,16 +17,16 @@ Add the following line to the project's pom.xml file:
    <dependency>
       <groupId>com.github.drinkjava2</groupId>
       <artifactId>jdbpro</artifactId>
-      <version>3.0.0</version> <!-- or Maven latest version -->
+      <version>4.0</version> <!-- or Maven latest version -->
    </dependency>
 ```
 If there is no special reason (for example, if you want to develop your own ORM tool), it is generally not recommended to use jDbPro directly, but instead use jSqlBox because the latter is more complete.
 jDbPro relies on DbUtils. If you use Maven, the DbUtils package commons-dbutils-1.7.jar corresponding to its major version number will be automatically downloaded.
 
 ### Use
-Starting with version 3.0.0, jDbPro will no longer have its own documentation, as its functionality has been introduced in the user manual of jSqlBox, where n, i, p, t, and INLINE series methods are all inherited from DbPro。
+jDbPro have no documentation, as its functionality has been introduced in the user manual of jSqlBox, where n, i, p, t, and INLINE series methods are all inherited from DbPro。
 The following two lines are short examples. For more usuages, see jSqlBox user manual.
 ```
-DbPro dbPro = new DbPro(someDataSource);
-dbPro.nExecute("update users set name=?, address=?", "Sam", "Canada");
+DbPro dbPro = new DbPro(someDataSource);  
+dbPro.nExecute("update users set name=?, " , param("Sam"), "address=?", param("Canada"));
 ```

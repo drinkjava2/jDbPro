@@ -13,22 +13,23 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package com.github.drinkjava2.jdbpro.log;
+package com.github.drinkjava2.jlogs;
 
 /**
- * DbProLog used for jDbPro and jSqlBox project, if a "DbProLog.properties" file
- * if found on class root folder (main/resources), will try load the designated
- * DbProLog implementation, otherwise use default DbProPrintLog as log output.
- * <br/>
+ * JLog used for jSqlBox project, if a "jlogs.properties" file if found on class
+ * root folder (main/resources), will try load the JLog implementation,
+ * otherwise use default EmptyLog<br/>
  * 
- * An example of "DbProLog.properties": <br/>
- * log=com.github.drinkjava2.jdbpro.log.DbProSLF4JLog
+ * A format example of "jlogs.properties": <br/>
+ * log=com.github.drinkjava2.jlogs.ConsoleLog
  * 
+ * Another full example of using SLF4j+LogBack in production environment please
+ * see jsqlbox-jbooox demo project
  * 
  * @author Yong Zhu
  * @since 2.0.5
  */
-public interface DbProLog {
+public interface Log {
 
 	public void info(String msg);
 
